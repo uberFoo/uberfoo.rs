@@ -1,0 +1,220 @@
+use std::fs::File;
+
+use http::server::HttpServer;
+use http::server::Method;
+use http::server::Request;
+
+async fn main() -> Future<()> {
+    let server = HttpServer::new();
+    let counter = 0;
+
+    // server.route(
+    //     "/ace-builds/src-noconflict/ace.js",
+    //     Method::Get,
+    //     |req: Request| -> string {
+    //         let file = std::fs::File::open("ace.js").unwrap();
+    //         file
+    //     },
+    // );
+
+    server.route("/", Method::Get, |req: Request| -> string {
+        print("${req.uri().path()}\n");
+        print("${counter}\n");
+        "
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Welcome to My World</title>
+    <style>
+        /* CSS for three column layout */
+        .container {
+            display: flex;
+        }
+
+        .column {
+            flex: 1;
+            padding: 10px;
+        }
+
+        /* Style the middle column */
+        .middle-column {
+            background-color: #ccccff;
+            flex-grow: 2;
+        }
+
+        form {
+            width: 90%;
+            padding: 20px;
+            margin: auto;
+            border: 1px solid #f0f0f0
+            border-radius: 5px;
+            background-color: #f0f0fF;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0),
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0);
+            background-size: 20px 20px;
+        }
+
+    </style>
+    <style type='text/css' media='screen'>
+        .ace_editor {
+    		border: 1px solid lightgray;
+    		margin: auto;
+    		height: 300px;
+    		width: 90%;
+            padding: 20px;
+    	}
+    </style>
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+    <script>
+        $(document).ready(function(){
+            $('form').submit(function(event){
+                // Prevent the default form submission
+                event.preventDefault();
+            });
+
+            $('#increment_button').click(function(){
+                // Send the form data using AJAX
+                $.ajax({
+                    type: 'POST',
+                    url: 'http://127.0.0.1:3030/increment',
+                    success: function(response){
+                        // Update the page content with the response from the server
+                        location.reload();
+                    }
+                });
+            });
+
+             $('#decrement_button').click(function(){
+                // Send the downvote data using AJAX
+                $.ajax({
+                    type: 'POST',
+                    url: 'http://127.0.0.1:3030/decrement',
+                    success: function(response){
+                        // Update the page content with the response from the server
+                        location.reload();
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class='container'>
+        <div class='column'></div>
+        <div class='column middle-column'>
+            <!-- Text content goes here -->
+            <h2>Welcome to My World</h2>
+            <p>Posted on <time datetime='2024-04-08'>April 8, 2024</time></p>
+            <p>
+            Today marks the one year anniversary of my programming language <a href='https://github.com/uberFoo/dwarf' target='_blank'>dwarf</a>.
+            <p>
+            This inaugural post has two purposes: to show off dwarf and to talk about lambdas over FFI.
+            For the first part, this page in served by a server written in my programming language, <a href='https://github.com/uberFoo/dwarf' target='_blank'>dwarf</a>.
+            </p>
+            </br>
+            <p>
+            Some more stuff to say, should be code above me.
+            </p>
+            <form id='myForm' action='' method='post'>
+                <p>
+                Below is a fun little counter that is shared across all instances of this page.
+                It's reminiscent of a web page from the 90's! ☺️
+                </p>
+                <button type='button' id='decrement_button' name='foo' value='decrement'>-</button>
+                <label>${counter}</label>
+                <button type='button' id='increment_button' name='foo' value='increment'>+</button>
+            </form>
+            <p>
+            The source code for the counter is below (the rest of this page was removed for clarity).
+            </p>
+            <div id=\"editor\">use http::server::HttpServer;
+use http::server::Method;
+use http::server::Request;
+
+async fn main() -> Future<()> {
+    let server = HttpServer::new();
+    let counter = 0;
+
+    server.route(\"/counter\", Method::Get, |req: Request| -> string {
+        \"<p>serving number ＄{counter}</p>\"
+    });
+
+    server.route(\"/increment\", Method::Post, |req: Request| -> string {
+        counter = counter + 1;
+        \"<p>serving number ＄{counter}</p>\"
+    });
+
+    server.route(\"/decrement\", Method::Post, |req: Request| -> string {
+        counter = counter - 1;
+        \"<p>serving number ＄{counter}</p>\"
+    });
+
+    server.route(\"/help\", Method::Get, |req: Request| -> string {
+        \"
+        <p>hit the /counter endpoint to view the counter</p>
+        <p>post to /increment to increment the counter</p>
+        <p>post to /decrement to decrement the counter</p>
+        \"
+    });
+
+    server.serve(80).await
+}
+            </div>
+            <footer style='text-align: right; padding: 20px;'>
+                <a href='https://twitter.com/share?ref_src=twsrc%5Etfw' class='twitter-share-button' data-show-count='false'>Tweet</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
+                <a href='https://twitter.com/uberFoo?ref_src=twsrc%5Etfw' class='twitter-follow-button' data-show-count='false'>Follow @uberFoo</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
+                <a href='https://www.github.com/uberFoo' target='_blank'>
+                    <img src='github-mark-white.png' width='25'>
+                </a>
+            </footer>
+        </div>
+        <div class='column'></div>
+    </div>
+
+    <script src='/ace-builds/src-noconflict/ace.js' type='text/javascript' charset='utf-8'></script>
+    <script>
+        var editor = ace.edit('editor');
+        editor.setTheme('ace/theme/monokai');
+        editor.session.setMode('ace/mode/rust');
+        editor.setReadOnly(true);
+    </script>
+
+</body>
+</html>
+"
+    });
+
+    server.route("/counter", Method::Get, |req: Request| -> string {
+        print("${req.uri().path()}\n");
+        "<p>serving number ${counter}</p>"
+    });
+
+    server.route("/increment", Method::Post, |req: Request| -> string {
+        print("${req.uri().path()}\n");
+        counter = counter + 1;
+        "<p>serving number ${counter}</p>"
+    });
+
+    server.route("/decrement", Method::Post, |req: Request| -> string {
+        print("${req.uri().path()}\n");
+        counter = counter - 1;
+        "<p>serving number ${counter}</p>"
+    });
+
+    server.route("/help", Method::Get, |req: Request| -> string {
+        print("${req.uri().path()}\n");
+        "
+        <p>hit the /counter endpoint to view the counter</p>
+        <p>post to /increment to increment the counter</p>
+        <p>post to /decrement to decrement the counter</p>
+        "
+    });
+
+    server.serve(3030).await
+}
