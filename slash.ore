@@ -76,7 +76,7 @@ async fn main() -> Future<()> {
     });
 
     server.route(\"/counter\", Method::Get, |req: Request| -> string {
-        \"<p>serving number ＄{counter}</p>\"
+        \"＄{counter}\"
     });
 
     server.route(\"/increment\", Method::Post, |req: Request| -> string {
@@ -97,7 +97,7 @@ async fn main() -> Future<()> {
         \"
     });
 
-    server.serve(3031).await
+    server.serve(80).await
 }
 ```
 
@@ -221,7 +221,7 @@ Please, and thank you!
                 // Send the form data using AJAX
                 $.ajax({
                     type: 'POST',
-                    url: 'http://127.0.0.1:3031/increment',
+                    url: 'http://uberfoo.rs/increment',
                     success: function(response){
                         // Update the page content with the response from the server
                         // location.reload();
@@ -234,7 +234,7 @@ Please, and thank you!
                 // Send the downvote data using AJAX
                 $.ajax({
                     type: 'POST',
-                    url: 'http://127.0.0.1:3031/decrement',
+                    url: 'http://uberfoo.rs/decrement',
                     success: function(response){
                         // Update the page content with the response from the server
                         // location.reload();
@@ -366,7 +366,7 @@ Please, and thank you!
                 // Send the form data using AJAX
                 $.ajax({
                     type: 'POST',
-                    url: 'http://127.0.0.1:3031/increment',
+                    url: 'http://uberfoo.rs/increment',
                     success: function(response){
                         // Update the page content with the response from the server
                         // location.reload();
@@ -379,7 +379,7 @@ Please, and thank you!
                 // Send the downvote data using AJAX
                 $.ajax({
                     type: 'POST',
-                    url: 'http://127.0.0.1:3031/decrement',
+                    url: 'http://uberfoo.rs/decrement',
                     success: function(response){
                         // Update the page content with the response from the server
                         // location.reload();
@@ -449,7 +449,7 @@ async fn main() -> Future<()> {
     let counter = 0;
 
     server.route(\"/counter\", Method::Get, |req: Request| -> string {
-        \"<p>serving number ＄{counter}</p>\"
+        \"＄{counter}\"
     });
 
     server.route(\"/increment\", Method::Post, |req: Request| -> string {
