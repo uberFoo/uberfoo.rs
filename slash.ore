@@ -116,7 +116,7 @@ Please, and thank you!
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Welcome to My World</title>
-    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css\">
+    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tomorrow-night-bright.css\">
     <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css\" integrity=\"sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls\" crossorigin=\"anonymous\">
     <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/grids-responsive-min.css\">
     <style>
@@ -198,15 +198,6 @@ Please, and thank you!
         }
 
     </style>
-    <style type='text/css' media='screen'>
-        .ace_editor {
-    		border: 1px solid lightgray;
-    		margin: auto;
-    		height: 300px;
-    		width: 90%;
-            padding: 20px;
-    	}
-    </style>
     <script src=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js\"></script>
     <script src=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js\"></script>
     <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
@@ -269,6 +260,7 @@ Please, and thank you!
             </form>
 
             <footer style='text-align: right; padding: 20px;'>
+                <a href=\"mailto:uberfoo@me.com\">Reach out!</a>
                 <a href='https://twitter.com/share?ref_src=twsrc%5Etfw' class='twitter-share-button' data-show-count='false'>Tweet</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
                 <a href='https://twitter.com/uberFoo?ref_src=twsrc%5Etfw' class='twitter-follow-button' data-show-count='false'>Follow @uberFoo</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
                 <a href='https://www.github.com/uberFoo' target='_blank'>
@@ -345,15 +337,6 @@ Please, and thank you!
             background-size: 20px 20px;
         }
 
-    </style>
-    <style type='text/css' media='screen'>
-        .ace_editor {
-    		border: 1px solid lightgray;
-    		margin: auto;
-    		height: 300px;
-    		width: 90%;
-            padding: 20px;
-    	}
     </style>
     <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
     <script>
@@ -497,15 +480,6 @@ async fn main() -> Future<()> {
             </footer>
         </div>
     </div>
-
-    <script src='/ace-builds/src-noconflict/ace.js' type='text/javascript' charset='utf-8'></script>
-    <script>
-        var editor = ace.edit('editor');
-        editor.setTheme('ace/theme/monokai');
-        editor.session.setMode('ace/mode/rust');
-        editor.setReadOnly(true);
-    </script>
-
 </body>
 </html>"
     }
