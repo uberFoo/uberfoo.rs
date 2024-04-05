@@ -45,7 +45,8 @@ I hope to also come out of this with an abstraction for building sites: a framew
 
 To that end I plan on posting regular updates and insights into the language.
 To whet your whistle, there is a counter at the bottom of the page.
-The source code for the counter is just below.
+The dwarf source code for the counter (the entire server, sans this content, in fact) is just below.
+(If you are interested, feel free to peruse the [source code](https://github.com/uberFoo/uberfoo.rs)).
 
 Notice that the counter variable is not only shared between the routes, but it's also shared with the `server.serve()` method.
 That means that this counter is not unique to any single session.
@@ -101,7 +102,7 @@ async fn main() -> Future<()> {
 }
 ```
 
-I hope that you found this worth the time to read.
+I hope that you found this post gratifying.
 If you did plan on visiting often -- this space is under construction, and it's gonna be awesome.
 And don't forget to visit the repository and leave a star.
 Please, and thank you!
