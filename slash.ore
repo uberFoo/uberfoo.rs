@@ -11,9 +11,11 @@ impl Slash {
 
 Posted on April 6, 2024
 
+## Happy Anniversary dwarf!
+
 Today marks the one year anniversary of my programming language: [dwarf](https://github.com/uberFoo/dwarf).
 I'm celebrating with a web page from the 90's! ☺️
-The seriously cool bit is that this site is served by dwarf, using [hyper](https://hyper.rs) as the HTTP library.
+The seriously cool bit is that this site is served by dwarf itself, using the [hyper](https://hyper.rs) HTTP library.
 
 I started dwarf hoping it wouldn't take more that a few months.
 And for my purposes maybe I was done in a few months, but it's really taken a life of it's own.
@@ -24,14 +26,14 @@ That project involves models and code generation, and I'd like to write about it
 All I really thought I needed was a simple, but typed, scripting language.
 Using Rust as a starting place seemed like a good idea (when I started learning rust I really wanted a REPL).
 As I dug into it, there were some features I thought would be useful.
-The useful bits turned into things that would be cool.
+The useful bits became things that would just be cool.
 It was at this point I think that I became a language junkie.
 
 There are a ton of language features that I didn't expect to implement.
 I ended up adding generics because I couldn't live without `Option<T>` and `Result<T, E>`.
 I think I added enums before generics, and I didn't think I'd need them at first.
 
-Loadable modules were a must, and I'm glad I added them, despite the time it took.
+Loadable modules (shared libraries) were a must, and I'm glad I added them, despite the time it took to make it work.
 Besides the VM (which was not planned) and the compiler (again, not planned), async took the most time.
 In fact it was such a pain, and the result so neat, I split it off into the crate [puteketeke](https://docs.rs/puteketeke/latest/puteketeke/).
 
@@ -39,27 +41,18 @@ My toy language is actually now generally useful.
 Not to say that it should be used -- there are a ton of corner cases (which is just a euphemism for unusual, consistent bugs).
 However it's most definitely useful for me, and as I use it more, the more bugs that will get fixed.
 
-My plan currently is to build a real blogging platform with dwarf, with this as a start.
+## Moving Forward
+
+My plan currently is to build a real blogging platform with dwarf, with this page as a start.
 It feels like a fun way to continue to build and develop the language, while building something real.
 I hope to also come out of this with an abstraction for building sites: a framework perhaps?
 
-To that end I plan on posting regular updates and insights into the language.
+To that end I plan on posting regular updates and insights into the language, the platform, and random thoughts and ideas.
 To whet your whistle, there is a counter at the bottom of the page.
 The dwarf source code for the counter (the entire server, sans this content, in fact) is just below.
 (If you are interested, feel free to peruse the [source code](https://github.com/uberFoo/uberfoo.rs)).
 
-Notice that the counter variable is not only shared between the routes, but it's also shared with the `server.serve()` method.
-That means that this counter is not unique to any single session.
-Or, turned on it's head, the counter is shared between all sessions.
-
-Another interesting thing to point out is that the routes pass closures to the server.
-This is necessary so that we can return the right stuff when an endpoint is hit.
-Getting this done was no small feat.
-
-To call the closure from the dynamic library involves saving the closed over function and environment in the main memory space.
-The saved function is then invoked across the FFI boundary from the dynamic library.
-And of course the result must be returned from the main binary to the shared library.
-Ultimately it's a pretty simple solution, and getting there was tricky.
+## Technical Gibberish
 
 ```rust
 use http::server::HttpServer;
@@ -102,10 +95,26 @@ async fn main() -> Future<()> {
 }
 ```
 
+Notice that the counter variable is not only shared between the routes, but it's also shared with the `server.serve()` method.
+That means that this counter is not unique to any single session.
+Or, turned on it's head, the counter is shared between all sessions.
+
+Another interesting thing to point out is that the routes pass closures to the server.
+This is necessary so that we can return the right stuff when an endpoint is hit.
+Getting this done was no small feat.
+
+To call the closure from the dynamic library involves saving the closed over function and environment in the main memory space.
+The saved function is then invoked across the FFI boundary from the dynamic library.
+And of course the result must be returned from the main binary to the shared library.
+Ultimately it's a pretty simple solution, and getting there was tricky.
+I'll write a post about it soon.
+
 I hope that you found this post gratifying.
-If you did plan on visiting often -- this space is under construction, and it's gonna be awesome.
-And don't forget to visit the repository and leave a star.
+If you do plan on coming back -- this space is under construction, and it's gonna be awesome.
+And don't forget to visit the dwarf repository and leave a star!
 Please, and thank you!
+
+  -- Keith Star
 ",
         );
 
@@ -134,7 +143,7 @@ Please, and thank you!
             padding: 10px;
         }
 
-        h1 {
+        h1,h2 {
             padding: 10px;
         }
 
@@ -272,215 +281,5 @@ Please, and thank you!
 </body>
 </html>
         "
-    }
-
-    fn emiter(counter: string) -> string {
-        "<!DOCTYPE html>
-<html lang='en'>
-<head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Welcome to My World</title>
-    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css\" integrity=\"sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls\" crossorigin=\"anonymous\">
-    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/grids-responsive-min.css\">
-    <style>
-        /*form {
-            width: 90%;
-            padding: 20px;
-            margin: auto;
-            border: 1px solid #f0f0f0
-            border-radius: 5px;
-            background-color: #f0f0fF;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }*/
-
-        .button-small {
-            font-size: 85%;
-        }
-
-        .button-success,
-        .button-error,
-        .button-warning,
-        .button-secondary {
-            color: white;
-            border-radius: 4px;
-            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-        }
-
-        .button-success {
-            background: rgb(28, 184, 65);
-            /* this is a green */
-        }
-
-        .button-error {
-            background: rgb(202, 60, 60);
-            /* this is a maroon */
-        }
-
-        .button-warning {
-            background: rgb(223, 117, 20);
-            /* this is an orange */
-        }
-
-        .button-secondary {
-            background: rgb(66, 184, 221);
-            /* this is a light blue */
-        }
-
-        .content {
-            background-color: #ccccff;
-        }
-
-        body {
-            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0),
-                linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0);
-            background-size: 20px 20px;
-        }
-
-    </style>
-    <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
-    <script>
-        $(document).ready(function(){
-            $('form').submit(function(event){
-                // Prevent the default form submission
-                event.preventDefault();
-            });
-
-            $('#increment_button').click(function(){
-                // Send the form data using AJAX
-                $.ajax({
-                    type: 'POST',
-                    url: 'http://uberfoo.rs/increment',
-                    success: function(response){
-                        // Update the page content with the response from the server
-                        // location.reload();
-                        $('#counter').text(response);
-                    }
-                });
-            });
-
-             $('#decrement_button').click(function(){
-                // Send the downvote data using AJAX
-                $.ajax({
-                    type: 'POST',
-                    url: 'http://uberfoo.rs/decrement',
-                    success: function(response){
-                        // Update the page content with the response from the server
-                        // location.reload();
-                        $('#counter').text(response);
-                    }
-                });
-            });
-        });
-    </script>
-</head>
-<body>
-    <div class='pure-g'>
-        <div class='pure-u-md-1-5'></div>
-        <div class='pure-u-md-4-5 pure-u-1 content'>
-            <!-- Text content goes here -->
-            <h1>Welcome to My World</h1>
-            <p>Posted on <time datetime='2024-04-06'>April 6, 2024</time></p>
-            <p>
-            Today marks the one year anniversary of my programming language: <a href='https://github.com/uberFoo/dwarf' target='_blank'>dwarf</a>.
-            I'm celebrating with a web page from the 90's! ☺️
-            The seriously cool bit is that this site is served by dwarf, using <a href='https://hyper.rs' target='_blank'>hyper</a> as the HTTP library.
-            </p>
-            <p>
-            My plan currently is to build a real blogging platform from dwarf, with this as a start.
-            It feels like a fun way to continue to build and develop the language, while building something real.
-            I hope to also come out of this with an abstraction for building sites: a framework perhaps?
-            </p>
-            <p>
-            But now for the real fun -- bending Rust to our will! 😈
-            </p>
-            <h2>Lambda's over FFI</h2>
-            <p>
-            The main point of this post, besides showing off dwarf, is to discuss how to do lambdas over FFI in Rust.
-            This problem came up when implementing the server extension for dwarf.
-            </p>
-            <h3>A Motivating Example</h3>
-            <p>
-            To motivate the conversation we present a fun little counter!
-            </p>
-            <form class='pure-form' id='myForm' action='' method='post'>
-                <fieldset>
-                    <div class='pure-g'>
-                        <div class='pure-u-3-24'>
-                        <button class='pure-button button-error button-small' type='button' id='decrement_button' name='foo' value='decrement'>-</button>
-                        </div>
-                        <div class='pure-u-2-24'>
-                        <label id='counter'>${counter}</label>
-                        </div>
-                        <div class='pure-u-2-24'>
-                        <button class='pure-button button-success button-small' type='button' id='increment_button' name='foo' value='increment'>+</button>
-                        </div>
-                    </div>
-                </fieldset>
-            </form>
-            <p>
-            The source code for the counter is below (the rest of this page was removed for clarity).
-            Notice that the counter variable is not only shared between the routes, but it's also shared with the <code>server.serve()</code> method.
-            That means that this counter is not unique to any single session.
-            Or, turned on it's head, the counter is shared between all sessions.
-            </p>
-            <div id=\"editor\">use http::server::HttpServer;
-use http::server::Method;
-use http::server::Request;
-
-async fn main() -> Future<()> {
-    let server = HttpServer::new();
-    let counter = 0;
-
-    server.route(\"/counter\", Method::Get, |req: Request| -> string {
-        \"＄{counter}\"
-    });
-
-    server.route(\"/increment\", Method::Post, |req: Request| -> string {
-        counter = counter + 1;
-        \"＄{counter}\"
-    });
-
-    server.route(\"/decrement\", Method::Post, |req: Request| -> string {
-        counter = counter - 1;
-        \"＄{counter}\"
-    });
-
-    server.route(\"/help\", Method::Get, |req: Request| -> string {
-        \"
-        <p>hit the /counter endpoint to view the counter</p>
-        <p>post to /increment to increment the counter</p>
-        <p>post to /decrement to decrement the counter</p>
-        \"
-    });
-
-    server.serve(80).await
-}
-            </div>
-            <p>
-            The bit that is central to this discussion is that we are passing closures to <code>server.route(route, method, callback)</code>.
-            This is necessary so that we can return the right stuff when an endpoint is hit.
-            The last line is where we go away and wait for connections.
-            </p>
-            <h4>A dwarf Tangent</h4>
-            <p>
-            Before I start talking about calling functions across an FFI boundary
-            <h3>HTTP Server Extension</h3>
-            <p>
-            I mentioned above that the HTTP server is an extension.
-            This is achieved by compiling it into a shared library and loading that at runtime, all with the help of the <a href='https://docs.rs/abi_stable/latest/abi_stable/' target='_blank'>abi_stable</a> crate.
-            In order to pass values across the FFI boundary, abi_staple has defined alternatives for the most used Rust types.
-            </p>
-            <footer style='text-align: right; padding: 20px;'>
-                <a href='https://twitter.com/share?ref_src=twsrc%5Etfw' class='twitter-share-button' data-show-count='false'>Tweet</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
-                <a href='https://twitter.com/uberFoo?ref_src=twsrc%5Etfw' class='twitter-follow-button' data-show-count='false'>Follow @uberFoo</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
-                <a href='https://www.github.com/uberFoo' target='_blank'>
-                    <img src='github-mark-white.png' width='25'>
-                </a>
-            </footer>
-        </div>
-    </div>
-</body>
-</html>"
     }
 }
