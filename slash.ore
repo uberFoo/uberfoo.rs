@@ -48,9 +48,25 @@ It feels like a fun way to continue to build and develop the language, while bui
 I hope to also come out of this with an abstraction for building sites: a framework perhaps?
 
 To that end I plan on posting regular updates and insights into the language, the platform, and random thoughts and ideas.
-To whet your whistle, there is a counter at the bottom of the page.
+To whet your whistle, there is a counter below.
 The dwarf source code for the counter (the entire server, sans this content, in fact) is just below.
 (If you are interested, feel free to peruse the [source code](https://github.com/uberFoo/uberfoo.rs)).
+
+<form class='pure-form' id='myForm' action='' method='post'>
+    <fieldset>
+        <div class='pure-g'>
+            <div class='pure-u-3-24'>
+            <button class='pure-button button-error button-small' type='button' id='decrement_button' name='foo' value='decrement'>-</button>
+            </div>
+            <div class='pure-u-2-24'>
+            <label id='counter'>${counter}</label>
+            </div>
+            <div class='pure-u-2-24'>
+            <button class='pure-button button-success button-small' type='button' id='increment_button' name='foo' value='increment'>+</button>
+            </div>
+        </div>
+    </fieldset>
+</form>
 
 ## Technical Gibberish
 
@@ -118,8 +134,7 @@ Please, and thank you!
 ",
         );
 
-        "
-<!DOCTYPE html>
+        "<!DOCTYPE html>
 <html lang='en'>
 <head>
     <script async src=\"https://www.googletagmanager.com/gtag/js?id=G-RZXB2EDQ6F\"></script>
@@ -146,6 +161,14 @@ Please, and thank you!
             background-color: #f0f0fF;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }*/
+
+
+        font-size: calc(0.8rem + 0.5vw);
+
+
+        h1, h2, h3, h4, h5, h6 {
+            font-size: calc(1.5rem + 1vw);
+        }
 
         form {
             padding: 10px;
@@ -259,24 +282,7 @@ Please, and thank you!
         <div class='pure-u-md-1-5'></div>
         <div class='pure-u-md-4-5 pure-u-1 content'>"
         + inner +
-"
-            <form class='pure-form' id='myForm' action='' method='post'>
-                <fieldset>
-                    <div class='pure-g'>
-                        <div class='pure-u-3-24'>
-                        <button class='pure-button button-error button-small' type='button' id='decrement_button' name='foo' value='decrement'>-</button>
-                        </div>
-                        <div class='pure-u-2-24'>
-                        <label id='counter'>${counter}</label>
-                        </div>
-                        <div class='pure-u-2-24'>
-                        <button class='pure-button button-success button-small' type='button' id='increment_button' name='foo' value='increment'>+</button>
-                        </div>
-                    </div>
-                </fieldset>
-            </form>
-
-            <footer style='text-align: right; padding: 20px;'>
+        "<footer style='text-align: right; padding: 20px;'>
                 <a href=\"mailto:uberfoo@me.com\">Reach out!</a>
                 <a href='https://twitter.com/share?ref_src=twsrc%5Etfw' class='twitter-share-button' data-show-count='false'>Tweet</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
                 <a href='https://twitter.com/uberFoo?ref_src=twsrc%5Etfw' class='twitter-follow-button' data-show-count='false'>Follow @uberFoo</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>

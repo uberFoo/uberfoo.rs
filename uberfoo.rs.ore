@@ -1,7 +1,14 @@
-use md::Md;
+use std::env::Var;
+use std::result::Result;
+
 use http::server::HttpServer;
 use http::server::Method;
 use http::server::Request;
+use md::Md;
+use sqlx::Sqlx;
+use sqlx::Pool;
+use sqlx::Row;
+use sqlx::Type;
 
 mod slash;
 
@@ -9,33 +16,61 @@ mod slash;
 
 async fn main() -> Future<()> {
     let server = HttpServer::new();
-    let counter = 0;
+    let sqlx = Sqlx::new();
+    if let Result::<Pool, Error>::Ok(pool) = sqlx
+        .connect("postgres://postgres:postgres@localhost/uberfoo.rs")
+        .await
+    {
+        print("Connected to database\n");
 
-    server.route("/", Method::Get, |req: Request| -> string {
-        slash::Slash::emit(counter)
-    });
+        let select_query = "SELECT counter FROM counter ORDER BY updated_at DESC LIMIT 1;";
+        let counter = 0;
 
-    server.route("/counter", Method::Get, |req: Request| -> string {
-        "${counter}"
-    });
+        server.route("/", Method::Get, |req: Request| -> string {
+            let map = pool.query(select_query);
+            let q = map.map(|row: Row| -> int {
+                row.get("counter", Type::Short)
+            });
+            let counter = q.fetch_one();
 
-    server.route("/increment", Method::Post, |req: Request| -> string {
-        counter = counter + 1;
-        "${counter}"
-    });
+            if let Result::<Row, Error>::Ok(counter) = counter {
+                print(counter);
+                slash::Slash::emit(counter)
+            } else {
+                "Error loading counter"
+            }
+            // match counter {
+            //     Result::Ok(coun) => {
+            //         slash::Slash::emit(coun)
+            //     }
+            //     _ => {
+            //         "Error loading counter"
+            //     }
+            // }
+            // ""
+        });
 
-    server.route("/decrement", Method::Post, |req: Request| -> string {
-        counter = counter - 1;
-        "${counter}"
-    });
+        server.route("/counter", Method::Get, |req: Request| -> string {
+            "${counter}"
+        });
 
-    server.route("/help", Method::Get, |req: Request| -> string {
-        "
-        <p>hit the /counter endpoint to view the counter</p>
-        <p>post to /increment to increment the counter</p>
-        <p>post to /decrement to decrement the counter</p>
-        "
-    });
+        server.route("/increment", Method::Post, |req: Request| -> string {
+            counter = counter + 1;
+            "${counter}"
+        });
 
-    server.serve(80).await
+        server.route("/decrement", Method::Post, |req: Request| -> string {
+            counter = counter - 1;
+            "${counter}"
+        });
+
+        server.route("/help", Method::Get, |req: Request| -> string {
+            "
+            <p>hit the /counter endpoint to view the counter</p>
+            <p>post to /increment to increment the counter</p>
+            <p>post to /decrement to decrement the counter</p>
+            "
+        });
+        server.serve(3030).await
+    }
 }
