@@ -4,73 +4,144 @@ use std::result::Result;
 use http::server::HttpServer;
 use http::server::Method;
 use http::server::Request;
+use http::server::Body;
+
 use md::Md;
+
 use sqlx::Sqlx;
 use sqlx::Pool;
 use sqlx::Row;
 use sqlx::Type;
+use sqlx::Error;
 
 mod slash;
+mod counter;
 
 // use slash::Slash;
 
 async fn main() -> Future<()> {
     let server = HttpServer::new();
     let sqlx = Sqlx::new();
+
+    let port = 3030;
+    let host = "127.0.0.1:3030";
+
+    let db = match Var::var("DATABASE_URL") {
+        Result::Ok(db) => db,
+        Result::Err(_) => "postgres://postgres:postgres@localhost/uberfoo.rs",
+    };
+
     if let Result::<Pool, Error>::Ok(pool) = sqlx
-        .connect("postgres://postgres:postgres@localhost/uberfoo.rs")
+        .connect(db)
         .await
     {
         print("Connected to database\n");
 
-        let select_query = "SELECT counter FROM counter ORDER BY updated_at DESC LIMIT 1;";
-        let counter = 0;
+        server.route("/", Method::Get, Body::Text, |req: Request| -> string {
+            slash::Slash::emit(host)
+        });
 
-        server.route("/", Method::Get, |req: Request| -> string {
-            let map = pool.query(select_query);
-            let q = map.map(|row: Row| -> int {
-                row.get("counter", Type::Short)
-            });
-            let counter = q.fetch_one();
-
-            if let Result::<Row, Error>::Ok(counter) = counter {
-                print(counter);
-                slash::Slash::emit(counter)
+        server.route("/blog/counter", Method::Get, Body::Text, |req: Request| -> string {
+            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                counter::Counter::emit(host, counter)
             } else {
                 "Error loading counter"
             }
-            // match counter {
-            //     Result::Ok(coun) => {
-            //         slash::Slash::emit(coun)
-            //     }
-            //     _ => {
-            //         "Error loading counter"
-            //     }
-            // }
-            // ""
         });
 
-        server.route("/counter", Method::Get, |req: Request| -> string {
-            "${counter}"
+        server.route("/blog/database", Method::Get, Body::Text, |req: Request| -> string {
+            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                counter::Db::emit(host, counter)
+            } else {
+                "Error loading counter"
+            }
         });
 
-        server.route("/increment", Method::Post, |req: Request| -> string {
-            counter = counter + 1;
-            "${counter}"
+        server.route("/counter", Method::Get, Body::Text, |req: Request| -> string {
+            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                counter as string
+            } else {
+                "Error loading counter"
+            }
         });
 
-        server.route("/decrement", Method::Post, |req: Request| -> string {
-            counter = counter - 1;
-            "${counter}"
+        server.route("/increment", Method::Post, Body::Text, |req: Request| -> string {
+            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                counter = counter + 1;
+
+                let insert_query = "INSERT INTO counter (counter) VALUES ($1);";
+                let map = pool.query(insert_query);
+                let map = map.bind(counter);
+                map.execute();
+
+                counter as string
+            } else {
+                "Error loading counter"
+            }
         });
 
-        server.route("/help", Method::Get, |req: Request| -> string {
+        server.route("/decrement", Method::Post, Body::Text, |req: Request| -> string {
+            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                counter = counter - 1;
+
+                let insert_query = "INSERT INTO counter (counter) VALUES ($1);";
+                let map = pool.query(insert_query);
+                let map = map.bind(counter);
+                map.execute();
+
+                counter as string
+            } else {
+                "Error loading counter"
+            }
+        });
+
+        server.route("/counter_data", Method::Get, Body::Json, |req: Request| -> string {
+            let select_query = "SELECT * FROM counter ORDER BY updated_at DESC LIMIT 100;";
+            let map = pool.query(select_query);
+            let q = map.map(|row: Row| -> string {
+                "{\"timestamp\": \"${row.get(\"updated_at\", Type::Timestamp)}\", \"value\": ${row.get(\"counter\", Type::Short))}}"
+            });
+            let data = q.fetch_all();
+
+            let first = true;
+            match data {
+                Result::<[Row], Error>::Ok(data) => {
+                    let d = data as [string];
+
+                    let data_string = "[";
+                    for row in d {
+                        if first {
+                            first = false;
+                            data_string = data_string + row;
+                        } else {
+                            data_string = data_string + ", " + row;
+                        }
+                    }
+                    data_string + "]"
+                }
+                Result::<[string], Error>::Err(e) => "Error loading counter data",
+            }
+        });
+
+        server.route("/help", Method::Get, Body::Text, |req: Request| -> string {
             "
             <p>hit the /counter endpoint to view the counter</p>
             <p>post to /increment to increment the counter</p>
             <p>post to /decrement to decrement the counter</p>
             "
         });
-        server.serve(3030).await
+        server.serve(port).await
+    }
+}
+
+fn get_counter(pool: Pool) -> Result<int, Error> {
+    let select_query = "SELECT counter FROM counter ORDER BY updated_at DESC LIMIT 1;";
+    let map = pool.query(select_query);
+    let q = map.map(|row: Row| -> int {
+        row.get("counter", Type::Short)
+    });
+    match q.fetch_one() {
+        Result::<Row, Error>::Ok(counter) => Result::<int, Error>::Ok(counter as int),
+        Result::<Row, Error>::Err(e) => Result::<int, Error>::Err(e),
     }
 }
