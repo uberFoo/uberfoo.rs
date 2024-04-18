@@ -1,4 +1,3 @@
--- Add migration script here
 CREATE TABLE counter
 (
     sequence_number SERIAL PRIMARY KEY,

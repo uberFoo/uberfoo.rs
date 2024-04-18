@@ -17,7 +17,9 @@ use sqlx::Error;
 mod slash;
 mod counter;
 
-// use slash::Slash;
+use slash::Slash;
+use counter::Counter;
+use counter::Db;
 
 async fn main() -> Future<()> {
     let server = HttpServer::new();
@@ -31,106 +33,111 @@ async fn main() -> Future<()> {
         Result::Err(_) => "postgres://postgres:postgres@localhost/uberfoo.rs",
     };
 
-    if let Result::<Pool, Error>::Ok(pool) = sqlx
-        .connect(db)
-        .await
-    {
-        print("Connected to database\n");
+    match sqlx.connect(db).await {
+        Result::<Pool, Error>::Ok(pool) => {
+            print("Connected to database\n");
 
-        server.route("/", Method::Get, Body::Text, |req: Request| -> string {
-            slash::Slash::emit(host)
-        });
-
-        server.route("/blog/counter", Method::Get, Body::Text, |req: Request| -> string {
-            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                counter::Counter::emit(host, counter)
-            } else {
-                "Error loading counter"
-            }
-        });
-
-        server.route("/blog/database", Method::Get, Body::Text, |req: Request| -> string {
-            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                counter::Db::emit(host, counter)
-            } else {
-                "Error loading counter"
-            }
-        });
-
-        server.route("/counter", Method::Get, Body::Text, |req: Request| -> string {
-            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                counter as string
-            } else {
-                "Error loading counter"
-            }
-        });
-
-        server.route("/increment", Method::Post, Body::Text, |req: Request| -> string {
-            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                counter = counter + 1;
-
-                let insert_query = "INSERT INTO counter (counter) VALUES ($1);";
-                let map = pool.query(insert_query);
-                let map = map.bind(counter);
-                map.execute();
-
-                counter as string
-            } else {
-                "Error loading counter"
-            }
-        });
-
-        server.route("/decrement", Method::Post, Body::Text, |req: Request| -> string {
-            if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                counter = counter - 1;
-
-                let insert_query = "INSERT INTO counter (counter) VALUES ($1);";
-                let map = pool.query(insert_query);
-                let map = map.bind(counter);
-                map.execute();
-
-                counter as string
-            } else {
-                "Error loading counter"
-            }
-        });
-
-        server.route("/counter_data", Method::Get, Body::Json, |req: Request| -> string {
-            let select_query = "SELECT * FROM counter ORDER BY updated_at DESC LIMIT 100;";
-            let map = pool.query(select_query);
-            let q = map.map(|row: Row| -> string {
-                "{\"timestamp\": \"${row.get(\"updated_at\", Type::Timestamp)}\", \"value\": ${row.get(\"counter\", Type::Short))}}"
+            server.route("/", Method::Get, Body::Text, |req: Request| -> string {
+                Slash::emit(host)
             });
-            let data = q.fetch_all();
 
-            let first = true;
-            match data {
-                Result::<[Row], Error>::Ok(data) => {
-                    let d = data as [string];
-
-                    let data_string = "[";
-                    for row in d {
-                        if first {
-                            first = false;
-                            data_string = data_string + row;
-                        } else {
-                            data_string = data_string + ", " + row;
-                        }
-                    }
-                    data_string + "]"
+            server.route("/blog/counter", Method::Get, Body::Text, |req: Request| -> string {
+                if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                    Counter::emit(host, counter)
+                } else {
+                    "Error loading counter"
                 }
-                Result::<[string], Error>::Err(e) => "Error loading counter data",
-            }
-        });
+            });
 
-        server.route("/help", Method::Get, Body::Text, |req: Request| -> string {
-            "
-            <p>hit the /counter endpoint to view the counter</p>
-            <p>post to /increment to increment the counter</p>
-            <p>post to /decrement to decrement the counter</p>
-            "
-        });
-        server.serve(port).await
+            server.route("/blog/database", Method::Get, Body::Text, |req: Request| -> string {
+                if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                    Db::emit(host, counter)
+                } else {
+                    "Error loading counter"
+                }
+            });
+
+            server.route("/counter", Method::Get, Body::Text, |req: Request| -> string {
+                if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                    counter as string
+                } else {
+                    "Error loading counter"
+                }
+            });
+
+            server.route("/increment", Method::Post, Body::Text, |req: Request| -> string {
+                if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                    counter = counter + 1;
+
+                    let insert_query = "INSERT INTO counter (counter) VALUES ($1);";
+                    let map = pool.query(insert_query);
+                    let map = map.bind(counter);
+                    map.execute();
+
+                    counter as string
+                } else {
+                    "Error loading counter"
+                }
+            });
+
+            server.route("/decrement", Method::Post, Body::Text, |req: Request| -> string {
+                if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                    counter = counter - 1;
+
+                    let insert_query = "INSERT INTO counter (counter) VALUES ($1);";
+                    let map = pool.query(insert_query);
+                    let map = map.bind(counter);
+                    map.execute();
+
+                    counter as string
+                } else {
+                    "Error loading counter"
+                }
+            });
+
+            server.route("/counter_data", Method::Get, Body::Json, |req: Request| -> string {
+                let select_query = "SELECT * FROM counter ORDER BY updated_at DESC LIMIT 100;";
+                let map = pool.query(select_query);
+                let q = map.map(|row: Row| -> string {
+                    "{\"timestamp\": \"${row.get(\"updated_at\", Type::Timestamp)}\", \"value\": ${row.get(\"counter\", Type::Short))}}"
+                });
+                let data = q.fetch_all();
+
+                let first = true;
+                match data {
+                    Result::<[Row], Error>::Ok(data) => {
+                        let d = data as [string];
+
+                        let data_string = "[";
+                        for row in d {
+                            if first {
+                                first = false;
+                                data_string = data_string + row;
+                            } else {
+                                data_string = data_string + ", " + row;
+                            }
+                        }
+                        data_string + "]"
+                    }
+                    Result::<[string], Error>::Err(e) => "Error loading counter data",
+                }
+            });
+
+            server.route("/help", Method::Get, Body::Text, |req: Request| -> string {
+                "
+                <p>hit the /counter endpoint to view the counter</p>
+                <p>post to /increment to increment the counter</p>
+                <p>post to /decrement to decrement the counter</p>
+                "
+            });
+
+            server.use_tls("fullchain.pem", "privkey.pem");
+
+            server.serve(port).await
+        }
+        Result::<Pool, Error>::Err(e) => {
+            print("Error connecting to database: ${e.to_string()}\n");
+        }
     }
 }
 
