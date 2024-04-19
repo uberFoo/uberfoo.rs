@@ -256,7 +256,7 @@ Please, and thank you!
                 // Send the form data using AJAX
                 $.ajax({
                     type: 'POST',
-                    url: 'http://${host}/increment',
+                    url: 'https://${host}/increment',
                     success: function(response){
                         // Update the page content with the response from the server
                         // location.reload();
@@ -269,7 +269,7 @@ Please, and thank you!
                 // Send the downvote data using AJAX
                 $.ajax({
                     type: 'POST',
-                    url: 'http://${host}/decrement',
+                    url: 'https://${host}/decrement',
                     success: function(response){
                         // Update the page content with the response from the server
                         // location.reload();
@@ -290,7 +290,7 @@ Please, and thank you!
                 <a href='https://twitter.com/share?ref_src=twsrc%5Etfw' class='twitter-share-button' data-show-count='false'>Tweet</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
                 <a href='https://twitter.com/uberFoo?ref_src=twsrc%5Etfw' class='twitter-follow-button' data-show-count='false'>Follow @uberFoo</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
                 <a href='https://www.github.com/uberFoo' target='_blank'>
-                    <img src='github-mark-white.png' width='25'>
+                    <img src='https://${host}/github-mark-white.png' width='25'>
                 </a>
             </footer>
         </div>
@@ -470,7 +470,7 @@ The y-axis is the counter value, and the x-axis is the time of the update and th
                 // Send the form data using AJAX
                 $.ajax({
                     type: 'POST',
-                    url: 'http://${host}/increment',
+                    url: 'https://${host}/increment',
                     success: function(response){
                         // Update the page content with the response from the server
                         // location.reload();
@@ -484,7 +484,7 @@ The y-axis is the counter value, and the x-axis is the time of the update and th
                 // Send the downvote data using AJAX
                 $.ajax({
                     type: 'POST',
-                    url: 'http://${host}/decrement',
+                    url: 'https://${host}/decrement',
                     success: function(response){
                         // Update the page content with the response from the server
                         // location.reload();
@@ -506,7 +506,7 @@ The y-axis is the counter value, and the x-axis is the time of the update and th
     <script>
         let myChart = null;
         function fetchDataAndDrawChart() {
-            fetch('http://${host}/counter_data')
+            fetch('https://${host}/counter_data')
             .then(response => response.json())
             .then(data => {
                 const ctx = document.getElementById('myChart').getContext('2d');
@@ -557,7 +557,7 @@ The y-axis is the counter value, and the x-axis is the time of the update and th
                 <a href='https://twitter.com/share?ref_src=twsrc%5Etfw' class='twitter-share-button' data-show-count='false'>Tweet</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
                 <a href='https://twitter.com/uberFoo?ref_src=twsrc%5Etfw' class='twitter-follow-button' data-show-count='false'>Follow @uberFoo</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
                 <a href='https://www.github.com/uberFoo' target='_blank'>
-                    <img src='github-mark-white.png' width='25'>
+                    <img src='https://${host}/github-mark-white.png' width='25'>
                 </a>
             </footer>
         </div>

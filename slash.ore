@@ -20,8 +20,8 @@ Expect more to come on a regular basis.
 
 ## Posts
 
-- [Counter](http://${host}/blog/counter)
-- [Database](http://${host}/blog/database)
+- [Counter](https://${host}/blog/counter)
+- [Database](https://${host}/blog/database)
 
 Thanks for checking it out!
 
