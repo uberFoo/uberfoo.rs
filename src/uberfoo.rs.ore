@@ -5,6 +5,7 @@ use http::server::HttpServer;
 use http::server::Method;
 use http::server::Request;
 use http::server::Body;
+use http::server::Suffix;
 
 use md::Md;
 
@@ -39,6 +40,35 @@ async fn main() -> Future<()> {
 
             server.route("/", Method::Get, Body::Text, |req: Request| -> string {
                 Slash::emit(host)
+            });
+
+            server.prefix_route("/frog", Method::Get, Body::Text, |req: Request, prefix: Suffix| -> string {
+                let query = "
+                SELECT a.title, a.slug, a.published_at, m.markdown
+                FROM article a
+                JOIN markdown m ON a.content = m.id
+                WHERE a.slug = '${prefix.to_string()}';";
+
+                let map = pool.query(query);
+                let q = map.map(|row: Row| -> string {
+                    let title = row.get("title", Type::String);
+                    let slug = row.get("slug", Type::String);
+                    let published_at = row.get("published_at", Type::Timestamp);
+                    let markdown = row.get("markdown", Type::String);
+
+                    let md = Md::new();
+                    let html = md.to_html(markdown);
+
+                    "
+                    <h1>${title}</h1>
+                    <p>Published at: ${published_at}</p>
+                    <div>${html}</div>
+                    "
+                });
+                match q.fetch_one() {
+                    Result::<Row, Error>::Ok(article) => article as string,
+                    Result::<Row, Error>::Err(e) => "Error loading article",
+                }
             });
 
             server.route("/blog/counter", Method::Get, Body::Text, |req: Request| -> string {
@@ -96,7 +126,7 @@ async fn main() -> Future<()> {
             });
 
             server.route("/counter_data", Method::Get, Body::Json, |req: Request| -> string {
-                let select_query = "SELECT * FROM counter ORDER BY updated_at DESC LIMIT 100;";
+                let select_query = "SELECT * FROM counter ORDER BY updated_at DESC LIMIT 50;";
                 let map = pool.query(select_query);
                 let q = map.map(|row: Row| -> string {
                     "{\"timestamp\": \"${row.get(\"updated_at\", Type::Timestamp)}\", \"value\": ${row.get(\"counter\", Type::Short))}}"

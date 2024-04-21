@@ -145,7 +145,7 @@ Thanks for checking it out!
         <div class='pure-u-md-1-5'></div>
         <div class='pure-u-md-4-5 pure-u-1 content'>"
         + inner +
-        "<footer style='text-align: right; padding: 20px;'>
+        "   <footer style='text-align: right; padding: 20px;'>
                 <a href=\"mailto:uberfoo@me.com\">Reach out!</a>
                 <a href='https://twitter.com/share?ref_src=twsrc%5Etfw' class='twitter-share-button' data-show-count='false'>Tweet</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
                 <a href='https://twitter.com/uberFoo?ref_src=twsrc%5Etfw' class='twitter-follow-button' data-show-count='false'>Follow @uberFoo</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
