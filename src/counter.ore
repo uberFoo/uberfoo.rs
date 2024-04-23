@@ -314,7 +314,7 @@ Posted on April 16, 2024
 
 ## Ready for a database?
 
-[Last time](http://uberfoo.rs/blog/counter) I introduced dwarf, and showed off a counter.
+[Last time](https://uberfoo.rs/blog/counter) I introduced dwarf, and showed off a counter.
 I also stated my intention to use a blog as a motivation.
 
 To really get a blog off the ground we really need a place to store our posts.
@@ -323,7 +323,7 @@ To that end I created a simple database plugin for dwarf.
 Next time I'll discuss the plugin architecture, and how exactly we get this to work in Rust.
 
 For now enjoy a persistent counter, with a chart to boot!
-The chart shows the last 100 updates to the counter.
+The chart shows the last 50 updates to the counter.
 The y-axis is the counter value, and the x-axis is the time of the update and the scale is seconds.
 
 
