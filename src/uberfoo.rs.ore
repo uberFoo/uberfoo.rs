@@ -42,32 +42,50 @@ async fn main() -> Future<()> {
                 Slash::emit(host)
             });
 
-            server.prefix_route("/frog", Method::Get, Body::Text, |req: Request, prefix: Suffix| -> string {
+            server.prefix_route("/blog", Method::Get, Body::Text, |req: Request, prefix: Suffix| -> string {
                 let query = "
-                SELECT a.title, a.slug, a.published_at, m.markdown
+                SELECT a.title, a.slug, a.published_at, m.markdown, h.head, h.body
                 FROM article a
                 JOIN markdown m ON a.content = m.id
+                LEFT JOIN html h ON a.slug = h.slug
                 WHERE a.slug = '${prefix.to_string()}';";
 
                 let map = pool.query(query);
                 let q = map.map(|row: Row| -> string {
-                    let title = row.get("title", Type::String);
-                    let slug = row.get("slug", Type::String);
-                    let published_at = row.get("published_at", Type::Timestamp);
-                    let markdown = row.get("markdown", Type::String);
+                    let head:string = row.get("head", Type::String).unwrap();
+                    let body:string  = row.get("body", Type::String).unwrap();
+
+                    let title = row.get("title", Type::String).unwrap();
+                    let slug = row.get("slug", Type::String).unwrap();
+                    let published_at = row.get("published_at", Type::Timestamp).unwrap();
+                    let markdown = row.get("markdown", Type::String).unwrap();
 
                     let md = Md::new();
                     let html = md.to_html(markdown);
 
+                    let html = "
+<h1>${title}</h1>
+<p>Published at ${published_at}</p>
+${html}
+";
+
+                    let head = head.replace("TITLE", title);
+                    let body = body.replace("MARKDOWN", html);
+
                     "
-                    <h1>${title}</h1>
-                    <p>Published at: ${published_at}</p>
-                    <div>${html}</div>
+<!DOCTYPE html>
+ <html lang='en'>
+    <head>${head}</head>
+    <body>
+        ${body}
+    </body>
+</html>
                     "
                 });
+
                 match q.fetch_one() {
                     Result::<Row, Error>::Ok(article) => article as string,
-                    Result::<Row, Error>::Err(e) => "Error loading article",
+                    Result::<Row, Error>::Err(e) => "Error loading article: ${e.to_string()}",
                 }
             });
 
@@ -175,7 +193,7 @@ fn get_counter(pool: Pool) -> Result<int, Error> {
     let select_query = "SELECT counter FROM counter ORDER BY updated_at DESC LIMIT 1;";
     let map = pool.query(select_query);
     let q = map.map(|row: Row| -> int {
-        row.get("counter", Type::Short)
+        row.get("counter", Type::Short).unwrap()
     });
     match q.fetch_one() {
         Result::<Row, Error>::Ok(counter) => Result::<int, Error>::Ok(counter as int),

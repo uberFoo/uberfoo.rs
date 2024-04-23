@@ -519,7 +519,7 @@ The y-axis is the counter value, and the x-axis is the time of the update and th
 
         let myChart = null;
         function fetchDataAndDrawChart() {
-            clearCanvas('myChart');
+            // clearCanvas('myChart');
 
             fetch('https://${host}/counter_data')
                 .then(response => response.json())

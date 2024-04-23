@@ -8,287 +8,219 @@ CREATE TABLE markdown
 -- This is the main table for a blog post.
 CREATE TABLE article
 (
-    id SERIAL PRIMARY KEY,
+    slug VARCHAR(255) PRIMARY KEY,
     title VARCHAR(255),
-    slug VARCHAR(255),
     content INTEGER REFERENCES markdown(id),
+    is_published BOOLEAN DEFAULT FALSE,
     published_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- -- This is a page. A page has a title, an may either reference an article,
--- -- or markdown text.
--- CREATE TABLE page
--- (
---     id SERIAL PRIMARY KEY,
---     uri VARCHAR(255),
---     title VARCHAR(255),
---     page_body_id INTEGER REFERENCES page_body(id)
--- );
-
--- -- This is a page body. It may be either an article or markdown.
--- CREATE TABLE page_body
--- (
---     id SERIAL PRIMARY KEY,
---     article_id INTEGER REFERENCES article(id),
---     markdown_id INTEGER REFERENCES markdown(id),
---     CHECK ((article_id IS NOT NULL AND markdown_id IS NULL) OR
---         (markdown_id IS NOT NULL AND article_id IS NULL) AND
---         (article_id IS NOT NULL OR markdown_id IS NOT NULL))
--- );
-
-CREATE TABLE script
-(
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255),
-    script TEXT
-);
-
-INSERT INTO script(name, script) VALUES('counter_chart', '
-<script>
-    let myChart = null;
-    function fetchDataAndDrawChart() {
-        fetch("https://${host}/counter_data")
-        .then(response => response.json())
-        .then(data => {
-            const ctx = document.getElementById("counter_chart").getContext("2d");
-            const timestamps = data.map(item => item.timestamp);
-            const values = data.map(item => item.value);
-
-            if (myChart) {
-                myChart.data.labels = timestamps;
-                myChart.data.datasets[0].data = values;
-                myChart.update();
-            } else {
-                myChart = new Chart(ctx, {
-                    type: "line",
-                    data: {
-                        labels: timestamps,
-                        datasets: [{
-                            label: "Counter Over Time",
-                            data: values,
-                            backgroundColor: "rgba(255, 99, 132, 0.2)",
-                            borderColor: "rgba(132, 0, 132, 1)",
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            x: {
-                                type: "time",
-                                time: {
-                                    unit: "hour"
-                                }
-                            },
-                        }
-                    }
-                });
-            }
-        })
-        .catch(error => console.error("Error fetching data:", error));
-    }
-    fetchDataAndDrawChart();
-</script>
-')
-
-CREATE TABLE script_in_page
-(
-    id SERIAL PRIMARY KEY,
-    script_id INTEGER REFERENCES script(id),
-    article_id INTEGER REFERENCES article(id)
-);
-
--- CREATE TABLE theme
--- (
---     id SERIAL PRIMARY KEY,
---     name VARCHAR(255),
---     css TEXT
--- );
-
--- CREATE TABLE layout
--- (
---     id SERIAL PRIMARY KEY,
---     name VARCHAR(255),
---     head TEXT,
---     tail TEXT
--- );
+CREATE OR REPLACE FUNCTION update_article(_slug VARCHAR(255), _is_published BOOLEAN)
+RETURNS VOID AS $$
+BEGIN
+    UPDATE article
+    SET is_published = _is_published,
+        published_at = CASE WHEN _is_published THEN CURRENT_TIMESTAMP ELSE NULL END
+    WHERE slug = _slug;
+END;
+$$ LANGUAGE plpgsql;
 
 -- Insert posts
-WITH inserted_markdown AS (
+-- Insert the markdown
+WITH markdown_insert AS (
     INSERT INTO markdown (markdown)
     VALUES ('
-# Welcome to My World
+I have a lot to say about shared libraries, both with regards to [Rust](https://www.rust-lang.org) as well as [dwarf](https://github.com/uberFoo/dwarf).
 
-Posted on April 6, 2024
+## Shared Libraries in Rust
 
-## Happy Anniversary dwarf!
+Loading a shared library in rust isn''t difficult.
+Ensuring that types work across the FFI boundary is non-trivial.
+In fact, there''s a crate called [abi_stable](https://docs.rs/abi_stable/latest/abi_stable/) to help.
 
-Today marks the one year anniversary of my programming language: [dwarf](https://github.com/uberFoo/dwarf).
-I''m celebrating with a web page from the 90''s! ☺️
-The seriously cool bit is that this site is served by dwarf itself, using the [hyper](https://hyper.rs) HTTP library.
+My biggest problem was figuring out how to make it all work end-to-end.
+So it makes sense to document the process here.
+To be clear the goal is to load a shared library that contains functions that enable some external functionality.
 
-I started dwarf hoping it wouldn''t take more that a few months.
-And for my purposes maybe I was done in a few months, but it''s really taken a life of it''s own.
-And here it is a year later.
+The first thing that we want to do is determine the API that we''d like to have.
+The API is exposed as a trait, with the `#[sabi_trait]` attribute.
+For my use-case I only needed one, and provided three.
+The one I really need is the `invoke_func` method.
+Additionally there is `invoke_func_mut`, for when you really need to mutate `self`.
+Note that this comes with a price: a mutex gets locked and any attempt at re-entrance will deadlock.
 
-My original plan was to create a simple DSL that I could use in the "parent" project.
-That project involves models and code generation, and I''d like to write about it in the future.
-All I really thought I needed was a simple, but typed, scripting language.
-Using Rust as a starting place seemed like a good idea (when I started learning rust I really wanted a REPL).
-As I dug into it, there were some features I thought would be useful.
-The useful bits became things that would just be cool.
-It was at this point I think that I became a language junkie.
-
-There are a ton of language features that I didn''t expect to implement.
-I ended up adding generics because I couldn''t live without `Option<T>` and `Result<T, E>`.
-I think I added enums before generics, and I didn''t think I''d need them at first.
-
-Loadable modules (shared libraries) were a must, and I''m glad I added them, despite the time it took to make it work.
-Besides the VM (which was not planned) and the compiler (again, not planned), async took the most time.
-In fact it was such a pain, and the result so neat, I split it off into the crate [puteketeke](https://docs.rs/puteketeke/latest/puteketeke/).
-
-My toy language is actually now generally useful.
-Not to say that it should be used -- there are a ton of corner cases (which is just a euphemism for unusual, consistent bugs).
-However it''s most definitely useful for me, and as I use it more, the more bugs that will get fixed.
-
-## Moving Forward
-
-My plan currently is to build a real blogging platform with dwarf, with this page as a start.
-It feels like a fun way to continue to build and develop the language, while building something real.
-I hope to also come out of this with an abstraction for building sites: a framework perhaps?
-
-To that end I plan on posting regular updates and insights into the language, the platform, and random thoughts and ideas.
-To whet your whistle, there is a counter below.
-The dwarf source code for the counter (the entire server, sans this content, in fact) is just below.
-(If you are interested, feel free to peruse the [source code](https://github.com/uberFoo/uberfoo.rs)).
-
-<form class="pure-form" id="myForm" action="" method="post">
-    <fieldset>
-        <div class="pure-g">
-            <div class="pure-u-3-24">
-            <button class="pure-button button-error button-small" type="button" id="decrement_button" name="foo" value="decrement">-</button>
-            </div>
-            <div class="pure-u-2-24">
-            <label id="counter">${counter}</label>
-            </div>
-            <div class="pure-u-2-24">
-            <button class="pure-button button-success button-small" type="button" id="increment_button" name="foo" value="increment">+</button>
-            </div>
-        </div>
-    </fieldset>
-</form>
-
-## Technical Gibberish
+Finally is the `name` method.
+To be honest, I think that it is left over from my copy/pasting from other source files.
+Still, it doesn''t hurt.
+Note the attribute above `name`.
+This get''s shuffled around after you''ve released a version, and later add fields.
+I **have not** used this, and I''m not really familiar with it.
 
 ```rust
-use http::server::HttpServer;
-use http::server::Method;
-use http::server::Request;
+#[sabi_trait]
+pub trait Plugin: Clone + Debug + Display + Send + Sync {
+    fn invoke_func(
+        &self,
+        module: RStr<''_>,
+        ty: RStr<''_>,
+        name: RStr<''_>,
+        args: RVec<FfiValue>,
+    ) -> RResult<FfiValue, Error>;
 
-mod slash;
+    fn invoke_func_mut(
+        &mut self,
+        module: RStr<''_>,
+        ty: RStr<''_>,
+        name: RStr<''_>,
+        args: RVec<FfiValue>,
+    ) -> RResult<FfiValue, Error>;
 
-async fn main() -> Future<()> {
-    let server = HttpServer::new();
-    let counter = 0;
+    #[sabi(last_prefix_field)]
+    fn name(&self) -> RStr<''_>;
+}
 
-    server.route("/", Method::Get, |req: Request| -> string {
-        slash::Slash::emit(counter)
-    });
+pub type PluginType = Plugin_TO<''static, RBox<()>>;
+```
 
-    server.route("/counter", Method::Get, |req: Request| -> string {
-        "＄{counter}"
-    });
+Also note the `PluginType` type that builds upon code generated by the `#[sabi_trait]` attribute.
 
-    server.route("/increment", Method::Post, |req: Request| -> string {
-        counter = counter + 1;
-        "＄{counter}"
-    });
+Additionally you''ll need to have this defined:
 
-    server.route("/decrement", Method::Post, |req: Request| -> string {
-        counter = counter - 1;
-        "＄{counter}"
-    });
+```rust
+#[repr(C)]
+#[derive(StableAbi)]
+#[sabi(kind(Prefix(prefix_ref = PluginModRef)))]
+#[sabi(missing_field(panic))]
+pub struct PluginModule {
+    pub name: extern "C" fn() -> RStr<''static>,
+    #[sabi(last_prefix_field)]
+    pub new: extern "C" fn(RSender<LambdaCall>, RVec<FfiValue>) -> RResult<PluginType, Error>,
+}
 
-    server.route("/help", Method::Get, |req: Request| -> string {
-        "
-        <p>hit the /counter endpoint to view the counter</p>
-        <p>post to /increment to increment the counter</p>
-        <p>post to /decrement to decrement the counter</p>
-        "
-    });
-
-    server.serve(80).await
+impl RootModule for PluginModRef {
+    declare_root_module_statics! {PluginModRef}
+    const BASE_NAME: &''static str = "plugin";
+    const NAME: &''static str = "plugin";
+    const VERSION_STRINGS: VersionStrings = package_version_strings!();
 }
 ```
 
-Notice that the counter variable is not only shared between the routes, but it''s also shared with the `server.serve()` method.
-That means that this counter is not unique to any single session.
-Or, turned on it''s head, the counter is shared between all sessions.
+## Plugins in dwarf
 
-Another interesting thing to point out is that the routes pass closures to the server.
-This is necessary so that we can return the right stuff when an endpoint is hit.
-Getting this done was no small feat.
-
-To call the closure from the dynamic library involves saving the closed over function and environment in the main memory space.
-The saved function is then invoked across the FFI boundary from the dynamic library.
-And of course the result must be returned from the main binary to the shared library.
-Ultimately it''s a pretty simple solution, and getting there was tricky.
-I''ll write a post about it soon.
-
-I hope that you found this post gratifying.
-If you do plan on coming back -- this space is under construction, and it''s gonna be awesome.
-And don''t forget to visit the dwarf repository and leave a star!
-Please, and thank you!
-
-  -- Keith Star
-  ')
-    RETURNING id
-)
-INSERT INTO article (title, slug, content, published_at)
-SELECT 'Take a Number Please', 'counter', id, TIMESTAMP '2024-04-06 00:04:20'
-FROM inserted_markdown;
-
-WITH inserted_markdown AS (
-    INSERT INTO markdown (markdown)
-    VALUES ('
-# Welcome to My World
-
-Posted on April 16, 2024
-
-## Ready for a database?
-
-[Last time](http://uberfoo.rs/blog/counter) I introduced dwarf, and showed off a counter.
-I also stated my intention to use a blog as a motivation.
-
-To really get a blog off the ground we really need a place to store our posts.
-Currently these are just files in the file system, and that''s not going to cut it for long.
-To that end I created a simple database plugin for dwarf.
-Next time I''ll discuss the plugin architecture, and how exactly we get this to work in Rust.
-
-For now enjoy a persistent counter, with a chart to boot!
-The chart shows the last 100 updates to the counter.
-The y-axis is the counter value, and the x-axis is the time of the update and the scale is seconds.
-
-
-<form class="pure-form" id="myForm" action="" method="post">
-    <fieldset>
-        <div class="pure-g">
-            <div class="pure-u-3-24">
-            <button class="pure-button button-error button-small" type="button" id="decrement_button" name="foo" value="decrement">-</button>
-            </div>
-            <div class="pure-u-2-24">
-            <label id="counter">${counter}</label>
-            </div>
-            <div class="pure-u-2-24">
-            <button class="pure-button button-success button-small" type="button" id="increment_button" name="foo" value="increment">+</button>
-            </div>
-        </div>
-    </fieldset>
-</form>
-
-<canvas id="counter_chart" width="400" height="400"></canvas>
+Plugins are the primary method for adding functionality to the language, as libraries.
+To load a plugin in dwarf, you just use it: `use sqlx::Sqlx`.
 ')
     RETURNING id
 )
+    -- Insert the article
 INSERT INTO article (title, slug, content, published_at)
-SELECT 'Persistence!', 'database', id, TIMESTAMP '2024-04-16 00:04:20'
-FROM inserted_markdown;
+VALUES ('Plugins in Rust', 'plugins', (SELECT id FROM markdown_insert), TIMESTAMP '2024-04-23 00:04:20');
+
+-- This is a table to hold the html that comes before and after the markdown
+-- from the article.
+CREATE TABLE html
+(
+    slug VARCHAR(255) PRIMARY KEY,
+    head TEXT,
+    body TEXT
+);
+
+INSERT INTO html (slug, head, body)
+-- VALUES('__default_dont_be_dumb__',
+VALUES('plugins',
+'
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-RZXB2EDQ6F"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag("js", new Date());
+
+      gtag("config", "G-RZXB2EDQ6F");
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TITLE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tomorrow-night-bright.css">
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap");
+
+        body {
+            background-image: url("/404.webp");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-attachment: fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            /* White text color */
+            font-family: "JetBrains Mono", monospace;
+            /* Monospaced, old school feel */
+        }
+
+        .body-container code {
+            /* background-color: rgba(255, 255, 255, 0.3); /* Add this line */ */
+            padding: 2px 4px;
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        .body-container {
+            text-align: left;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            /* Semi-transparent black background for readability */
+            border-radius: 10px;
+            width: 90%;
+            /* Adjust based on layout needs */
+            max-width: 600px;
+            /* Maximum width */
+            min-height: 100vh;
+        }
+
+        .body-container h1, .body-container h2, .body-container h3, .body-container h4, .body-container h5, .body-container h6 {
+            color: green;
+            /* text-shadow: 2px 2px 4px rgba(55, 155, 55, 0.5); */
+        }
+
+        .body-container h1 {
+            font-size: 2em;
+        }
+
+        .body-container p {
+            font-size: 1em;
+        }
+
+        .body-container a {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 0px 5px;
+            background-color: #0c7b93;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .body-container a:hover {
+            background-color: #0a5968;
+
+
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>hljs.highlightAll();</script>
+',
+'
+        <div class="body-container">
+            MARKDOWN
+            <footer style="text-align: right; padding: 20px;">
+                <a href="mailto:uberfoo@me.com">Reach out!</a>
+                <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+                <a href="https://twitter.com/uberFoo?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @uberFoo</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+                <a href="https://www.github.com/uberFoo" target="_blank">
+                    <img src="/github-mark-white.png" width="25">
+                </a>
+            </footer>
+        </div>
+')
