@@ -12,7 +12,7 @@ impl Slash {
 This is my experimental blog.
 It's built using my own programming language, [dwarf](https://www.github.com/uberFoo/dwarf).
 
-The blog platform is a work in progress — in fact the blog is about creating the platform.
+The blog platform is a work in progress -- in fact the blog is about creating the platform.
 The pages are written in markdown and converted to HTML using a plugin for dwarf.
 The HTTP server and database are also plugins.
 
@@ -22,10 +22,11 @@ Expect more to come on a regular basis.
 
 - [Counter](https://${host}/blog/counter)
 - [Database](https://${host}/blog/database)
+- [Plugins in Rust](https://${host}/blog/plugins)
 
 Thanks for checking it out!
 
- - Keith T. Star
+ \\- Keith T. Star
 ",
         );
 
@@ -43,117 +44,129 @@ Thanks for checking it out!
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Welcome to My World</title>
-    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css\" integrity=\"sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls\" crossorigin=\"anonymous\">
-    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/grids-responsive-min.css\">
     <style>
-        /*form {
-            width: 90%;
-            padding: 20px;
-            margin: auto;
-            border: 1px solid #f0f0f0
-            border-radius: 5px;
-            background-color: #f0f0fF;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }*/
-
-
-        font-size: calc(0.8rem + 0.5vw);
-
-        canvas {
-            padding: 20px;
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            font-size: calc(1.5rem + 1vw);
-        }
-
-        form {
-            padding: 10px;
-        }
-
-        h1,h2 {
-            padding: 10px;
-        }
-
-        p {
-            padding: 10px;
-        }
-
-        code {
-            font-size: .88em;
-            background-color: #b0b0b0;
-        }
-
-        pre {
-            padding: 10px;
-            border-radius: 5px;
-            // box-shadow: inset 0 0 5px #000000;
-            font-size: .88em;
-        }
-
-        .button-small {
-            font-size: 85%;
-        }
-
-        .button-success,
-        .button-error,
-        .button-warning,
-        .button-secondary {
-            color: white;
-            border-radius: 4px;
-            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-        }
-
-        .button-success {
-            background: rgb(28, 184, 65);
-            /* this is a green */
-        }
-
-        .button-error {
-            background: rgb(202, 60, 60);
-            /* this is a maroon */
-        }
-
-        .button-warning {
-            background: rgb(223, 117, 20);
-            /* this is an orange */
-        }
-
-        .button-secondary {
-            background: rgb(66, 184, 221);
-            /* this is a light blue */
-        }
-
-        .content {
-            background-color: #ccccff;
-        }
+        @import url(\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tomorrow-night-bright.css\");
+        @import url(\"https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap\");
 
         body {
-            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0),
-                linear-gradient(45deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0);
-            background-size: 20px 20px;
+            background-image: url(\"/hacking.webp\");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-attachment: fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            /* White text color */
+            font-family: \"JetBrains Mono\", monospace;
+            /* Monospaced, old school feel */
+        }
+
+        body::before {
+            content: \"\";
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background-image: url(\"/hacking.webp\");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: -1;
+        }
+
+        .body-container {
+            text-align: left;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            /* Semi-transparent black background for readability */
+            border-radius: 10px;
+            width: 90%;
+            /* Adjust based on layout needs */
+            max-width: 800px;
+            /* Maximum width */
+            min-height: 100vh;
+        }
+
+        @media (max-width: 600px) {
+            .body-container {
+                with: 100%;
+                max-width: none;
+            }
+        }
+
+        .body-container blockquote {
+            margin: 20px;
+            padding: 20px;
+            background-color: #333; /* Dark background, resembling a terminal */
+            border-left: 10px solid #0c7b93; /* A bright teal accent line */
+            color: #8ec07c; /* Light green color typical of old monochrome monitors */
+            font-family: 'Courier New', Courier, monospace; /* Monospaced font for the code-like appearance */
+            text-shadow: 0 0 3px #000; /* Text shadow for a slight glowing effect */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Subtle shadow for depth */
+            border-radius: 4px; /* Soften the edges */
+        }
+
+        .body-container blockquote p {
+            margin: 0; /* Remove default margin */
+            font-family: \"3270\", monospace;
+            font-size: 1.1em; /* Slightly larger font size for emphasis */
+        }
+
+        .body-container code {
+            border-radius: 10px;
+            color: #9edc8f;
+            padding: 2px 4px;
+            font-size: 1em;
+            font-family: \"3270\", monospace;
+        }
+
+        .body-container h1, .body-container h2, .body-container h3, .body-container h4, .body-container h5, .body-container h6 {
+            color: green;
+            /* text-shadow: 2px 2px 4px rgba(55, 155, 55, 0.5); */
+        }
+
+        .body-container h1 {
+            font-size: 2em;
+        }
+
+        .body-container p {
+            font-size: 1em;
+        }
+
+        .body-container a {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 0px 5px;
+            background-color: #0c7b93;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .body-container a:hover {
+            background-color: #0a5968;
         }
 
     </style>
     <script src=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js\"></script>
     <script src=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js\"></script>
-    <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js'></script>
+    <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js\"></script>
     <script>hljs.highlightAll();</script>
-</head>
-<body>
-    <div class='pure-g'>
-        <div class='pure-u-md-1-5'></div>
-        <div class='pure-u-md-4-5 pure-u-1 content'>"
+    <div class=\"body-container\">
+"
         + inner +
-        "   <footer style='text-align: right; padding: 20px;'>
-                <a href=\"mailto:uberfoo@me.com\">Reach out!</a>
-                <a href='https://twitter.com/share?ref_src=twsrc%5Etfw' class='twitter-share-button' data-show-count='false'>Tweet</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
-                <a href='https://twitter.com/uberFoo?ref_src=twsrc%5Etfw' class='twitter-follow-button' data-show-count='false'>Follow @uberFoo</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
-                <a href='https://www.github.com/uberFoo' target='_blank'>
-                    <img src='github-mark-white.png' width='25'>
-                </a>
-            </footer>
-        </div>
+        "
+        <footer style='text-align: right; padding: 20px;'>
+            <a href=\"mailto:uberfoo@me.com\">Reach out!</a>
+            <a href='https://twitter.com/share?ref_src=twsrc%5Etfw' class='twitter-share-button' data-show-count='false'>Tweet</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
+            <a href='https://twitter.com/uberFoo?ref_src=twsrc%5Etfw' class='twitter-follow-button' data-show-count='false'>Follow @uberFoo</a><script async src='https://platform.twitter.com/widgets.js' charset='utf-8'></script>
+            <a href='https://www.github.com/uberFoo' target='_blank'>
+                <img src='github-mark-white.png' width='25'>
+            </a>
+        </footer>
     </div>
 </body>
 </html>

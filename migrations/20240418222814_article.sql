@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS article;
+DROP TABLE IF EXISTS markdown;
+
 -- This table stores the text for a page. That text is expected to be markdown.
 CREATE TABLE markdown
 (
@@ -31,21 +34,45 @@ WITH markdown_insert AS (
     INSERT INTO markdown (markdown)
     VALUES ('
 I have a lot to say about shared libraries, both with regards to [Rust](https://www.rust-lang.org) as well as [dwarf](https://github.com/uberFoo/dwarf).
+What I plan on doing is discussing how to safely load shared libraries in Rust.
+Then I''m going to talk about how dwarf leverages the former to extend the language.
 
 ## Shared Libraries in Rust
 
 Loading a shared library in rust isn''t difficult.
-Ensuring that types work across the FFI boundary is non-trivial.
+Ensuring that types work across the FFI boundary is non-trivial because Rust doesn''t have a stable ABI.
 In fact, there''s a crate called [abi_stable](https://docs.rs/abi_stable/latest/abi_stable/) to help.
 
-My biggest problem was figuring out how to make it all work end-to-end.
-So it makes sense to document the process here.
+I won''t try to describe what `abi_stable` does.
+Instead I''ll quote from the documentation:
+
+> [abi_stable is] For Rust-to-Rust ffi, with a focus on creating libraries loaded at program startup, and with load-time type-checking.
+>
+> This library allows defining Rust libraries that can be loaded at runtime, even if they were built with a different Rust version than the crate that depends on it.
+
+When I was adding plugins to dwarf, my biggest challenge was figuring out how to make it all work end-to-end with the `abi_stable` crate.
+Given the effort and time it took, it makes sense to document the process here.
+
 To be clear the goal is to load a shared library that contains functions that enable some external functionality.
+
+> **`abi_stable` is Complicated**
+>
+> I got it working, and left it at that.
+> There are aspects of the crate that are completely unfamiliar to me.
+> What I am documenting is what worked for my application.
+> Hopefully someone else will find some use for this.
+
+### Plugin API
 
 The first thing that we want to do is determine the API that we''d like to have.
 The API is exposed as a trait, with the `#[sabi_trait]` attribute.
-For my use-case I only needed one, and provided three.
-The one I really need is the `invoke_func` method.
+
+For dwarf what we need
+
+The following code comes from [plug_in.rs](https://github.com/uberFoo/dwarf/blob/develop/src/plug_in.rs) in the dwarf source tree.
+
+
+
 Additionally there is `invoke_func_mut`, for when you really need to mutate `self`.
 Note that this comes with a price: a mutex gets locked and any attempt at re-entrance will deadlock.
 
@@ -66,7 +93,7 @@ pub trait Plugin: Clone + Debug + Display + Send + Sync {
         name: RStr<''_>,
         args: RVec<FfiValue>,
     ) -> RResult<FfiValue, Error>;
-
+000
     fn invoke_func_mut(
         &mut self,
         module: RStr<''_>,
@@ -105,6 +132,44 @@ impl RootModule for PluginModRef {
 }
 ```
 
+The struct `PluginModule` is the means we are given to create a new plugin.
+I don''t have a lot of insight into `RootModule` impl. I just set it up with
+some generic strings and left it like I found it in the example code.
+n
+## Plugin Implementation
+
+That was the setup.
+Now we take a look at the implementation side of the plugin.
+These code snippets come from the [sqlx](https://github.com/launchbadge/sqlx) dwarf [plugin](https://github.com/uberFoo/dwarf/blob/develop/plugins/sqlx/src/lib.rs).
+
+This first snippet is really the magic that makes the whole thing work
+
+```rust
+#[export_root_module]
+pub fn instantiate_root_module() -> PluginModRef {
+    PluginModule { name, new }.leak_into_prefix()
+}
+```
+
+```rust
+#[sabi_extern_fn]
+pub fn name() -> RStr<''static> {
+    "sqlx".into()
+}
+
+/// Instantiates the plugin.
+#[sabi_extern_fn]
+pub fn new(
+    lambda_sender: RSender<LambdaCall>,
+    _args: RVec<FfiValue>,
+) -> RResult<PluginType, Error> {
+    let plugin = postgres::instantiate_root_module();
+    let plugin = plugin.new();
+    let plugin = plugin(lambda_sender, vec![].into()).unwrap();
+    ROk(Plugin_TO::from_value(plugin, TD_Opaque))
+}
+```
+
 ## Plugins in dwarf
 
 Plugins are the primary method for adding functionality to the language, as libraries.
@@ -126,8 +191,8 @@ CREATE TABLE html
 );
 
 INSERT INTO html (slug, head, body)
--- VALUES('__default_dont_be_dumb__',
-VALUES('plugins',
+VALUES('__default_dont_be_dumb__',
+-- VALUES('plugins',
 '
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-RZXB2EDQ6F"></script>
     <script>
@@ -140,12 +205,19 @@ VALUES('plugins',
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TITLE</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tomorrow-night-bright.css">
     <style>
+        @import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tomorrow-night-bright.css");
         @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap");
 
+        @font-face {
+            font-family: "3270";
+            src: url("/3270Condensed-Regular.woff") format("woff");
+            font-weight: normal;
+            font-style: normal;
+        }
+
         body {
-            background-image: url("/404.webp");
+            background-image: url("/hacking.webp");
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center;
@@ -159,10 +231,18 @@ VALUES('plugins',
             /* Monospaced, old school feel */
         }
 
-        .body-container code {
-            /* background-color: rgba(255, 255, 255, 0.3); /* Add this line */ */
-            padding: 2px 4px;
-            font-family: "Courier New", Courier, monospace;
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background-image: url("/hacking.webp");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: -1;
         }
 
         .body-container {
@@ -173,9 +253,41 @@ VALUES('plugins',
             border-radius: 10px;
             width: 90%;
             /* Adjust based on layout needs */
-            max-width: 600px;
+            max-width: 800px;
             /* Maximum width */
             min-height: 100vh;
+        }
+
+        @media (max-width: 600px) {
+            .body-container {
+                with: 100%;
+                max-width: none;
+            }
+        }
+
+        .body-container blockquote {
+            margin: 20px;
+            padding: 20px;
+            background-color: #333; /* Dark background, resembling a terminal */
+            border-left: 10px solid #0c7b93; /* A bright teal accent line */
+            color: #8ec07c; /* Light green color typical of old monochrome monitors */
+            font-family: ''Courier New'', Courier, monospace; /* Monospaced font for the code-like appearance */
+            text-shadow: 0 0 3px #000; /* Text shadow for a slight glowing effect */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Subtle shadow for depth */
+            border-radius: 4px; /* Soften the edges */
+        }
+
+        .body-container blockquote p {
+            margin: 0; /* Remove default margin */
+            font-family: "3270", monospace;
+            font-size: 1.5em; /* Slightly larger font size for emphasis */
+        }
+
+        .body-container code {
+            border-radius: 10px;
+            color: #9edc8f;
+            font-size: 1.2em;
+            font-family: "3270", monospace;
         }
 
         .body-container h1, .body-container h2, .body-container h3, .body-container h4, .body-container h5, .body-container h6 {
@@ -203,7 +315,7 @@ VALUES('plugins',
 
         .body-container a:hover {
             background-color: #0a5968;
-
+        }
 
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>

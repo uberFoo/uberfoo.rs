@@ -22,12 +22,17 @@ use slash::Slash;
 use counter::Counter;
 use counter::Db;
 
+struct DefaultHtml {
+    head: string,
+    body: string,
+}
+
 async fn main() -> Future<()> {
     let server = HttpServer::new();
     let sqlx = Sqlx::new();
 
-    let port = 3030;
-    let host = "127.0.0.1:3030";
+    let port = 3033;
+    let host = "localhost:3033";
 
     let db = match Var::var("DATABASE_URL") {
         Result::Ok(db) => db,
@@ -38,11 +43,36 @@ async fn main() -> Future<()> {
         Result::<Pool, Error>::Ok(pool) => {
             print("Connected to database\n");
 
+            let default = "
+            SELECT h.head, h.body
+            FROM html h
+            WHERE h.slug = '__default_dont_be_dumb__';
+            ";
+            let map = pool.query(default);
+            let html = map.map(|row: Row| -> DefaultHtml {
+                let head = row.get("head", Type::String).unwrap();
+                let body = row.get("body", Type::String).unwrap();
+                DefaultHtml {
+                    head: head,
+                    body: body
+                }
+            });
+
+            let html = html.fetch_one();
+            let html: DefaultHtml = html.unwrap();
+
             server.route("/", Method::Get, Body::Text, |req: Request| -> string {
                 Slash::emit(host)
             });
 
             server.prefix_route("/blog", Method::Get, Body::Text, |req: Request, prefix: Suffix| -> string {
+                // This is a gnarly hack. If I don't do this then we can't reach
+                // back far enough to find html. Clearly a 🪳.
+                // To make it worse, I have to deconstruct the thing here, and
+                // not down in the if let expressions. No idea why.
+                let default_body = html.body;
+                let default_head = html.head;
+
                 let query = "
                 SELECT a.title, a.slug, a.published_at, m.markdown, h.head, h.body
                 FROM article a
@@ -52,8 +82,17 @@ async fn main() -> Future<()> {
 
                 let map = pool.query(query);
                 let q = map.map(|row: Row| -> string {
-                    let head:string = row.get("head", Type::String).unwrap();
-                    let body:string  = row.get("body", Type::String).unwrap();
+                    let head:string = if let Result::Ok(head) = row.get("head", Type::String) {
+                        head
+                    } else {
+                        default_head
+                    };
+
+                    let body:string = if let Result::Ok(body) = row.get("body", Type::String) {
+                        body
+                    } else {
+                        default_body
+                    };
 
                     let title = row.get("title", Type::String).unwrap();
                     let slug = row.get("slug", Type::String).unwrap();
@@ -147,7 +186,7 @@ ${html}
                 let select_query = "SELECT * FROM counter ORDER BY updated_at DESC LIMIT 50;";
                 let map = pool.query(select_query);
                 let q = map.map(|row: Row| -> string {
-                    "{\"timestamp\": \"${row.get(\"updated_at\", Type::Timestamp)}\", \"value\": ${row.get(\"counter\", Type::Short))}}"
+                    "{\"timestamp\": \"${row.get(\"updated_at\", Type::Timestamp).unwrap()}\", \"value\": ${row.get(\"counter\", Type::Short).unwrap()}}"
                 });
                 let data = q.fetch_all();
 
