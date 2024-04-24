@@ -31,8 +31,8 @@ async fn main() -> Future<()> {
     let server = HttpServer::new();
     let sqlx = Sqlx::new();
 
-    let port = 3033;
-    let host = "localhost:3033";
+    let port = 80;
+    let host = "uberfoo.rs";
 
     let db = match Var::var("DATABASE_URL") {
         Result::Ok(db) => db,
@@ -218,7 +218,7 @@ ${html}
                 "
             });
 
-            server.use_tls("fullchain.pem", "privkey.pem");
+            // server.use_tls("fullchain.pem", "privkey.pem");
 
             server.serve(port).await
         }
