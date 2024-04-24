@@ -247,6 +247,7 @@ VALUES('__default_dont_be_dumb__',
 
         .body-container {
             text-align: left;
+            margin-top: 60px;
             padding: 20px;
             background-color: rgba(0, 0, 0, 0.8);
             /* Semi-transparent black background for readability */
@@ -317,6 +318,50 @@ VALUES('__default_dont_be_dumb__',
             background-color: #0a5968;
         }
 
+        .nav-container {
+            background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black */
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Soft shadow for depth */
+            padding: 10px 0; /* Padding to give some space inside the container */
+            width: 100%; /* Full width */
+            position: fixed; /* Fixed at the top */
+            top: 0;
+            left: 0;
+            z-index: 1000; /* Ensure it''s above other content */
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: inline-block; /* Centering the nav list if text-align is center */
+        }
+
+        nav ul li {
+            display: inline-block;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            padding: 10px 20px;
+            color: white;
+            display: block;
+        }
+
+        nav ul li ul {
+            display: none;
+            position: absolute;
+            background-color: #444;
+        }
+
+        nav ul li:hover ul {
+            display: block; /* Show dropdown on hover */
+        }
+
+        nav ul li ul li {
+            display: block;
+        }
+
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
@@ -324,6 +369,24 @@ VALUES('__default_dont_be_dumb__',
     <script>hljs.highlightAll();</script>
 ',
 '
+        <div class="nav-container">
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/categories">Categories</a>
+                        <ul>
+                            <li><a href="/category/technology">Technology</a></li>
+                            <li><a href="/category/lifestyle">Lifestyle</a></li>
+                            <!-- More categories -->
+                        </ul>
+                    </li>
+                    <li><a href="/about">About</a></li>
+                    <li><a href="/archive">Archive</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+
         <div class="body-container">
             MARKDOWN
             <footer style="text-align: right; padding: 20px;">
