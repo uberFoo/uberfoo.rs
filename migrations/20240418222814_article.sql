@@ -160,39 +160,6 @@ impl RootModule for PluginModRef {
 }
 ```
 
-```rust
-let mut args = Vec::with_capacity(*arg_count);
-for _ in 0..*arg_count {
-    let arg = stack.pop().unwrap();
-    args.push(arg.into_value().into());
-}
-let library_path = RawLibrary::path_in_directory(
-    Path::new(&format!(
-        "{}/extensions/{}/lib",
-        self.home.display(),
-        plugin_root,
-    )),
-    plugin_root.as_str(),
-    LibrarySuffix::NoSuffix,
-);
-let root_module = (|| {
-    let header = lib_header_from_path(&library_path)?;
-    header.init_root_module::<PluginModRef>()
-})()
-.map_err(|e| {
-    if self.backtrace {
-        eprintln!("{self:?}");
-        print_stack(&stack, fp);
-    }
-    BubbaError::VmPanic {
-        message: format!("Plug-in error: {e}."),
-        location: location!(),
-    }
-})?;
-let ctor = root_module.new();
-let plugin = ctor(self.lambda_sender.clone().into(), args.into()).unwrap();
-```
-
 The struct `PluginModule` is the means we are given to create a new plugin.
 I don''t have a lot of insight into `RootModule` impl.
 I just set it up with some generic strings and left it like I found it in the example code.
@@ -229,6 +196,34 @@ pub fn new(
     let plugin = plugin(lambda_sender, vec![].into()).unwrap();
     ROk(Plugin_TO::from_value(plugin, TD_Opaque))
 }
+```
+
+```rust
+let library_path = RawLibrary::path_in_directory(
+    Path::new(&format!(
+        "{}/extensions/{}/lib",
+        self.home.display(),
+        plugin_root,
+    )),
+    plugin_root.as_str(),
+    LibrarySuffix::NoSuffix,
+);
+let root_module = (|| {
+    let header = lib_header_from_path(&library_path)?;
+    header.init_root_module::<PluginModRef>()
+})()
+.map_err(|e| {
+    if self.backtrace {
+        eprintln!("{self:?}");
+        print_stack(&stack, fp);
+    }
+    BubbaError::VmPanic {
+        message: format!("Plug-in error: {e}."),
+        location: location!(),
+    }
+})?;
+let ctor = root_module.new();
+let plugin = ctor(self.lambda_sender.clone().into(), args.into()).unwrap();
 ```
 
 ## Plugins in dwarf

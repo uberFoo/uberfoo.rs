@@ -67,9 +67,9 @@ async fn main() -> Future<()> {
 
             server.prefix_route("/blog", Method::Get, Body::Text, |req: Request, prefix: Suffix| -> string {
                 // This is a gnarly hack. If I don't do this then we can't reach
-                // back far enough to find html. Clearly a 🪳.
+                // back far enough to find html from the next lambda. Clearly a 🪳.
                 // To make it worse, I have to deconstruct the thing here, and
-                // not down in the if let expressions. No idea why.
+                // not down in the `if let` expressions down in the lambda. No idea why.
                 let default_body = html.body;
                 let default_head = html.head;
 

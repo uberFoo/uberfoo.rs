@@ -49,7 +49,7 @@ I hope to also come out of this with an abstraction for building sites: a framew
 
 To that end I plan on posting regular updates and insights into the language, the platform, and random thoughts and ideas.
 To whet your whistle, there is a counter below.
-The dwarf source code for the counter (the entire server, sans this content, in fact) is just below.
+The dwarf source code for the counter (the entire server, including this content, in fact) is just below.
 (If you are interested, feel free to peruse the [source code](https://github.com/uberFoo/uberfoo.rs)).
 
 <form id='myForm' action='' method='post'>
