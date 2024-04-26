@@ -519,6 +519,7 @@ VALUES(NULL,
             top: 100%;
             left: 0;
             width: 100%;
+            z-index: 1001;
         }
 
         nav ul li:hover ul {
@@ -576,8 +577,8 @@ VALUES(NULL,
                     <li><a href="/">Home</a></li>
                     <li><a href="/categories">Categories</a>
                         <ul>
-                            <li><a href="/category/technology">Rust</a></li>
-                            <li><a href="/category/lifestyle">dwarf</a></li>
+                            <li><a href="/category/rust">Rust</a></li>
+                            <li><a href="/category/dwarf">dwarf</a></li>
                             <!-- More categories -->
                         </ul>
                     </li>
@@ -600,13 +601,13 @@ VALUES(NULL,
             </footer>
         </div>
     <script>
-        document.getElementById(''menu-toggle'').addEventListener(''click'', function() {
-            var menu = document.getElementById(''menu'');
-            if (menu.style.display === ''block'') {
-                menu.style.display = ''none'';
-            } else {
-                menu.style.display = ''block'';
-            }
-        });
+document.addEventListener("DOMContentLoaded", function () {
+    // Toggle main menu with the hamburger icon
+    var menuToggle = document.getElementById("menu-toggle");
+    menuToggle.addEventListener("click", function () {
+        var menu = document.getElementById("menu");
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+    });
+});
     </script>
 ')

@@ -103,22 +103,22 @@ async fn main() -> Future<()> {
                     let html = md.to_html(markdown);
 
                     let html = "
-<h1>${title}</h1>
-<p>Published at ${published_at}</p>
-${html}
-";
+                        <h1>${title}</h1>
+                        <p>Published at ${published_at}</p>
+                        ${html}
+                    ";
 
                     let head = head.replace("TITLE", title);
                     let body = body.replace("MARKDOWN", html);
 
                     "
-<!DOCTYPE html>
- <html lang='en'>
-    <head>${head}</head>
-    <body>
-        ${body}
-    </body>
-</html>
+                    <!DOCTYPE html>
+                     <html lang='en'>
+                        <head>${head}</head>
+                        <body>
+                            ${body}
+                        </body>
+                    </html>
                     "
                 });
 
@@ -186,7 +186,10 @@ ${html}
                 let select_query = "SELECT * FROM counter ORDER BY updated_at DESC LIMIT 50;";
                 let map = pool.query(select_query);
                 let q = map.map(|row: Row| -> string {
-                    "{\"timestamp\": \"${row.get(\"updated_at\", Type::Timestamp).unwrap()}\", \"value\": ${row.get(\"counter\", Type::Short).unwrap()}}"
+                    "{
+                        \"timestamp\": \"${row.get(\"updated_at\", Type::Timestamp).unwrap()}\",
+                        \"value\": ${row.get(\"counter\", Type::Short).unwrap()}
+                    }"
                 });
                 let data = q.fetch_all();
 
@@ -218,7 +221,7 @@ ${html}
                 "
             });
 
-            server.use_tls("fullchain.pem", "privkey.pem");
+            // server.use_tls("fullchain.pem", "privkey.pem");
 
             server.serve(port).await
         }
