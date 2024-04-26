@@ -46,7 +46,7 @@ async fn main() -> Future<()> {
             let default = "
             SELECT h.head, h.body
             FROM html h
-            WHERE h.slug = '__default_dont_be_dumb__';
+            WHERE h.slug IS NULL;
             ";
             let map = pool.query(default);
             let html = map.map(|row: Row| -> DefaultHtml {
@@ -62,14 +62,14 @@ async fn main() -> Future<()> {
             let html: DefaultHtml = html.unwrap();
 
             server.route("/", Method::Get, Body::Text, |req: Request| -> string {
-                Slash::emit(host)
+                Slash::emit(host, html.head, html.body)
             });
 
             server.prefix_route("/blog", Method::Get, Body::Text, |req: Request, prefix: Suffix| -> string {
                 // This is a gnarly hack. If I don't do this then we can't reach
                 // back far enough to find html from the next lambda. Clearly a 🪳.
                 // To make it worse, I have to deconstruct the thing here, and
-                // not down in the `if let` expressions down in the lambda. No idea why.
+                // not down in the `if let` expressions down in the. No idea why.
                 let default_body = html.body;
                 let default_head = html.head;
 
@@ -130,7 +130,7 @@ ${html}
 
             server.route("/blog/counter", Method::Get, Body::Text, |req: Request| -> string {
                 if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                    Counter::emit(host, counter)
+                    Counter::emit(host, counter, html.head, html.body)
                 } else {
                     "Error loading counter"
                 }
@@ -138,7 +138,7 @@ ${html}
 
             server.route("/blog/database", Method::Get, Body::Text, |req: Request| -> string {
                 if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                    Db::emit(host, counter)
+                    Db::emit(host, counter, html.head, html.body)
                 } else {
                     "Error loading counter"
                 }
@@ -218,7 +218,7 @@ ${html}
                 "
             });
 
-            // server.use_tls("fullchain.pem", "privkey.pem");
+            server.use_tls("fullchain.pem", "privkey.pem");
 
             server.serve(port).await
         }
