@@ -964,6 +964,7 @@ I''ve touched on the important bits, but there are a lot of details that I''ve l
 For example, I didn''t talk about how the lambda functions work across the FFI boundary.
 
 I hope that this article has been helpful, and I''m happy to answer questions -- just reach out.
+If you like what I''m doing with dwarf, please consider leaving a star on the [dwarf GitHub repo](https://www.github.com/uberFoo/dwarf).
 
 ## Ffivalue
 ```rust
