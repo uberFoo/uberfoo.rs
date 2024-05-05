@@ -1118,7 +1118,7 @@ VALUES(NULL,
             text-align: left;
             margin-top: 60px; /* Adjust based on nav height */
             padding: 20px;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 1.0);
             border-radius: 10px;
             width: 90%;
             max-width: 800px;
