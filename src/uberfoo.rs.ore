@@ -78,9 +78,10 @@ async fn main() -> Future<()> {
                 FROM article a
                 JOIN markdown m ON a.content = m.id
                 LEFT JOIN html h ON a.slug = h.slug
-                WHERE a.slug = '${prefix.to_string()}';";
+                WHERE a.slug = $1;";
 
                 let map = pool.query(query);
+                let map = map.bind(prefix.to_string());
                 let q = map.map(|row: Row| -> string {
                     let head:string = if let Result::Ok(head) = row.get("head", Type::String) {
                         head
@@ -127,6 +128,12 @@ async fn main() -> Future<()> {
                     Result::<Row, Error>::Err(e) => "Error loading article: ${e.to_string()}",
                 }
             });
+
+            server.route("/auth/github", Method::Get, Body::Text, |req: Request| -> string {
+                print(req.uri().query());
+                ""
+            });
+
 
             server.route("/blog/counter", Method::Get, Body::Text, |req: Request| -> string {
                 if let Result::<int, Error>::Ok(counter) = get_counter(pool) {

@@ -7,7 +7,7 @@ impl Counter {
         let md = Md::new();
         let inner = md.to_html(
             "
-# Welcome to My World
+# Take a Number Please
 
 Posted on April 6, 2024
 
@@ -188,7 +188,7 @@ impl Db {
         let md = Md::new();
         let inner = md.to_html(
             "
-# Welcome to My World
+# Persistence!
 
 Posted on April 16, 2024
 
