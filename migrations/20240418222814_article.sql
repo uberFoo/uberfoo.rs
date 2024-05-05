@@ -1095,7 +1095,7 @@ VALUES(NULL,
             justify-content: center;
             color: #fff;
             /* White text color */
-            font-family: "JetBrains Mono", monospace;
+            font-family: "Courier New", monospace;
             /* Monospaced, old school feel */
         }
 
