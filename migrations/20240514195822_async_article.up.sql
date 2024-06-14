@@ -674,7 +674,7 @@ SET head = '
             </nav>
             <div>
                 <img src="/appleid_button@1x.png" class="apple-id" title="Sign in with Apple ID">
-                <a href="https://github.com/login/oauth/authorize?client_id=fa5175ee3bcf21bf2b11&redirect_uri=https://uberfoo.com/auth/github&scope=user&state=XYZZY">
+                <a href="https://github.com/login/oauth/authorize?client_id=fa5175ee3bcf21bf2b11&redirect_uri=https://uberfoo.com/auth/github">
                     <img src="/github-mark-white.png" width="20" class="github" title="Sign in with GitHub">
                 </a>
             </div>
