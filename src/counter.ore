@@ -4,7 +4,7 @@ struct Counter {}
 
 impl Counter {
     fn emit(host: string, counter: string, head: string, body: string) -> string {
-        let md = Md::new();
+        let md = Md::new("dark");
         let inner = md.to_html(
             "
 # Take a Number Please
@@ -185,7 +185,7 @@ struct Db {}
 
 impl Db {
     fn emit(host: string, counter: string, head: string, body: string) -> string {
-        let md = Md::new();
+        let md = Md::new("dark");
         let inner = md.to_html(
             "
 # Persistence!
@@ -204,7 +204,7 @@ Next time I'll discuss the plugin architecture, and how exactly we get this to w
 
 For now enjoy a persistent counter, with a chart to boot!
 The chart shows the last 50 updates to the counter.
-The y-axis is the counter value, and the x-axis is the time of the update and the scale is seconds.
+The y-axis is the counter value, and the x-axis is the time of the update and the scale is hours.
 
 
 <form id='myForm' action='' method='post'>

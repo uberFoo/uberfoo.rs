@@ -1,16 +1,48 @@
 use md::Md;
 
+use sqlx::Error;
+use sqlx::Pool;
+use sqlx::Row;
+use sqlx::Sqlx;
+use sqlx::Type;
+
 struct Slash {}
 
 impl Slash {
-    fn emit(host: string, head: string, body: string) -> string {
-        let md = Md::new();
+    fn emit(pool: Pool, host: string, head: string, body: string) -> string {
+        let articles: [string] = [];
+        let query = "
+            SELECT title, slug
+            FROM article
+            WHERE is_draft = FALSE;
+        ";
+        let map = pool.query(query);
+        let q = map.map(|row: Row| -> string {
+            let title: string = row.get("title", Type::String).unwrap();
+            let slug: string = row.get("slug", Type::String).unwrap();
+
+            " - [${title}](https://${host}/blog/${slug})\n"
+        });
+
+        match q.fetch_all() {
+            Result::<[Row], Error>::Ok(results) => {
+                for article in results {
+                    articles.push(article as string);
+                }
+            }
+            Result::<Row, Error>::Err(e) => {
+                print("Row Error: ${e}");
+            }
+        };
+
+        let md = Md::new("dark");
         let inner = md.to_html(
             "
 # Welcome to My World
 
 This is my experimental blog.
 It's built using my own programming language, [dwarf](https://www.github.com/uberFoo/dwarf).
+Leave a star if you think it's cool!
 
 The blog platform is a work in progress -- in fact the blog is about creating the platform.
 The pages are written in markdown and converted to HTML using a plugin for dwarf.
@@ -22,7 +54,7 @@ Expect more to come on a regular basis.
 
 - [Counter](https://${host}/blog/counter)
 - [Database](https://${host}/blog/database)
-- [Plugins in Rust](https://${host}/blog/plugins)
+${articles.join(\"\")}
 
 Thanks for checking it out!
 

@@ -1,30 +1,46 @@
 use std::env::Var;
+use std::option::Option;
 use std::result::Result;
 
+use http::client::HttpClient;
+use http::client::HttpError;
+use http::client::ClientResponse;
+
+use http::server::Body;
 use http::server::HttpServer;
 use http::server::Method;
 use http::server::Request;
-use http::server::Body;
+use http::server::ServerResponse;
 use http::server::Suffix;
 
 use md::Md;
 
-use sqlx::Sqlx;
+use sqlx::Error;
 use sqlx::Pool;
 use sqlx::Row;
+use sqlx::Sqlx;
 use sqlx::Type;
-use sqlx::Error;
 
-mod slash;
 mod counter;
+mod slash;
 
-use slash::Slash;
 use counter::Counter;
 use counter::Db;
+use slash::Slash;
 
 struct DefaultHtml {
     head: string,
     body: string,
+}
+
+fn get_counter(pool: Pool) -> Result<int, Error> {
+    let select_query = "SELECT counter FROM counter ORDER BY updated_at DESC LIMIT 1;";
+    let map = pool.query(select_query);
+    let q = map.map(|row: Row| -> int { row.get("counter", Type::Short).unwrap() });
+    match q.fetch_one() {
+        Result::<Row, Error>::Ok(counter) => Result::<int, Error>::Ok(counter as int),
+        Result::<Row, Error>::Err(e) => Result::<int, Error>::Err(e),
+    }
 }
 
 async fn main() -> Future<()> {
@@ -34,162 +50,306 @@ async fn main() -> Future<()> {
     let port = 80;
     let host = "uberfoo.rs";
 
-    let db = match Var::var("DATABASE_URL") {
+    let DB_URL = match Var::var("DATABASE_URL") {
         Result::Ok(db) => db,
         Result::Err(_) => "postgres://postgres:postgres@localhost/uberfoo.rs",
     };
 
-    match sqlx.connect(db).await {
+    let CLIENT_SECRET = match Var::var("CLIENT_SECRET") {
+        Result::Ok(db) => db,
+        Result::Err(_) => halt("missing CLIENT_SECRET!!\n"),
+    };
+
+    let http_client = HttpClient::new();
+
+    match sqlx.connect(DB_URL).await {
         Result::<Pool, Error>::Ok(pool) => {
             print("Connected to database\n");
 
             let default = "
-            SELECT h.head, h.body
-            FROM html h
-            WHERE h.slug IS NULL;
+                SELECT h.head, h.body
+                FROM html h
+                WHERE h.slug IS NULL;
             ";
             let map = pool.query(default);
             let html = map.map(|row: Row| -> DefaultHtml {
                 let head = row.get("head", Type::String).unwrap();
                 let body = row.get("body", Type::String).unwrap();
+
                 DefaultHtml {
-                    head: head,
-                    body: body
+                    head: head as string,
+                    body: body as string,
                 }
             });
 
             let html = html.fetch_one();
             let html: DefaultHtml = html.unwrap();
 
-            server.route("/", Method::Get, Body::Text, |req: Request| -> string {
-                Slash::emit(host, html.head, html.body)
+            server.route("/", Method::Get, |req: Request| -> ServerResponse {
+                let response = ServerResponse::new(req);
+                response.set_header("Set-Cookie", "uber_session=${Uuid::new()}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=31536000");
+                response.text(Slash::emit(pool, host, html.head, html.body));
+
+                response
             });
 
-            server.prefix_route("/blog", Method::Get, Body::Text, |req: Request, prefix: Suffix| -> string {
-                // This is a gnarly hack. If I don't do this then we can't reach
-                // back far enough to find html from the next lambda. Clearly a 🪳.
-                // To make it worse, I have to deconstruct the thing here, and
-                // not down in the `if let` expressions down in the. No idea why.
-                let default_body = html.body;
-                let default_head = html.head;
+            // This is where we handle routes under the /blog prefix.
+            //
+            server.prefix_route(
+                "/blog",
+                Method::Get,
+                |req: Request, prefix: Suffix| -> ServerResponse {
+                    // This is just a weird hack.
+                    let html = html;
 
-                let query = "
-                SELECT a.title, a.slug, a.published_at, m.markdown, h.head, h.body
-                FROM article a
-                JOIN markdown m ON a.content = m.id
-                LEFT JOIN html h ON a.slug = h.slug
-                WHERE a.slug = $1;";
-
-                let map = pool.query(query);
-                let map = map.bind(prefix.to_string());
-                let q = map.map(|row: Row| -> string {
-                    let head:string = if let Result::Ok(head) = row.get("head", Type::String) {
-                        head
+                    let theme = if let Option::Some(query) = req.uri().query() {
+                        if let Option::Some(theme) = query.get("theme") {
+                            theme
+                        } else {
+                            "dark"
+                        }
                     } else {
-                        default_head
+                        "dark"
                     };
 
-                    let body:string = if let Result::Ok(body) = row.get("body", Type::String) {
-                        body
-                    } else {
-                        default_body
-                    };
+                    // This is a gnarly hack. If I don't do this then we can't reach
+                    // back far enough to find html from the next lambda. Clearly a 🪳.
+                    // To make it worse, I have to deconstruct the thing here, and
+                    // not down in the `if let` expressions. No idea why.
+                    let default_body = html.body;
+                    let default_head = html.head;
 
-                    let title = row.get("title", Type::String).unwrap();
-                    let slug = row.get("slug", Type::String).unwrap();
-                    let published_at = row.get("published_at", Type::Timestamp).unwrap();
-                    let markdown = row.get("markdown", Type::String).unwrap();
-
-                    let md = Md::new();
-                    let html = md.to_html(markdown);
-
-                    let html = "
-                        <h1>${title}</h1>
-                        <p>Published at ${published_at}</p>
-                        ${html}
+                    let query = "
+                        SELECT a.title, a.slug, a.published_at, m.markdown, h.head, h.body
+                        FROM article a
+                        JOIN markdown m ON a.content = m.id
+                        LEFT JOIN html h ON a.slug = h.slug
+                        WHERE a.slug = $1;
                     ";
 
-                    let head = head.replace("TITLE", title);
-                    let body = body.replace("MARKDOWN", html);
+                    let map = pool.query(query);
+                    let map = map.bind_string(prefix.to_string());
+                    let q = map.map(|row: Row| -> string {
+                        let head: string = if let Result::Ok(head) = row.get("head", Type::String) {
+                            head
+                        } else {
+                            default_head
+                        };
 
-                    "
-                    <!DOCTYPE html>
-                     <html lang='en'>
-                        <head>${head}</head>
-                        <body>
-                            ${body}
-                        </body>
-                    </html>
-                    "
-                });
+                        let body: string = if let Result::Ok(body) = row.get("body", Type::String) {
+                            body
+                        } else {
+                            default_body
+                        };
 
-                match q.fetch_one() {
-                    Result::<Row, Error>::Ok(article) => article as string,
-                    Result::<Row, Error>::Err(e) => "Error loading article: ${e.to_string()}",
-                }
-            });
+                        let title = row.get("title", Type::String).unwrap();
+                        let slug = row.get("slug", Type::String).unwrap();
+                        let published_at = row.get("published_at", Type::Timestamp).unwrap();
+                        let markdown = row.get("markdown", Type::String).unwrap();
 
-            server.route("/auth/github", Method::Get, Body::Text, |req: Request| -> string {
-                print(req.uri().query());
-                ""
-            });
+                        let md = Md::new(theme);
+                        let html = md.to_html(markdown);
 
+                        let html = "
+                            <h1>${title}</h1>
+                            <p>Published at ${published_at}</p>
+                            ${html}
+                        ";
 
-            server.route("/blog/counter", Method::Get, Body::Text, |req: Request| -> string {
-                if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                    Counter::emit(host, counter, html.head, html.body)
+                        let head = head.replace("TITLE", title);
+                        let body = body.replace("MARKDOWN", html);
+
+                        "
+                            <!DOCTYPE html>
+                             <html lang='en'>
+                                <head>${head}</head>
+                                <body>
+                                    ${body}
+                                </body>
+                            </html>
+                        "
+                    });
+
+                    let response = ServerResponse::new(req);
+                    match q.fetch_one() {
+                        Result::<Row, Error>::Ok(article) => {
+                            response.text(article as string);
+                        }
+                        Result::<Row, Error>::Err(e) => {
+                            response.text("Error loading article: ${e.to_string()}");
+                            response.status(404);
+                        }
+                    };
+
+                    response
+                },
+            );
+
+            server.route("/auth/github", Method::Get, |req: Request| -> ServerResponse {
+                let uri = "https://github.com/login/oauth/access_token";
+                if let Option::Some(query) = req.uri().query() {
+                    let state = if let Option::Some(state) = query.get("state") {
+                        state
+                    } else {
+                        // We need to do something serious here since there should always be a state.
+                        let response = ServerResponse::new(req);
+                        response.text("No state value -- something is fishy.");
+
+                        return response
+                    };
+                    let code = if let Option::Some(code) = query.get("code") {
+                        code
+                    } else {
+                        // We need to do something serious here since there should always be a code.
+                        let response = ServerResponse::new(req);
+                        response.text("No code value -- something is fishy.");
+
+                       return response
+                    };
+                    print(uri);
+                    // 🚧 We need to test the state against what we sent. Somehow.
+                    let post = http_client.post(uri + "?client_id=CLIENT_ID&client_secret=${CLIENT_SECRET}&code=${code}&state=${state}").await;
+                    post.set_header("Accept", "application/json");
+
+                    match post.send().await {
+                        Result::<ClientResponse, HttpError>::Ok(resp) => {
+                            let body = resp.text().await;
+                            print(body);
+                            // let body = body.as_string();
+                            let response = ServerResponse::new(req);
+                            response.text(body);
+
+                            response
+                        }
+                        Result::<ClientResponse, Error>::Err(e) => {
+                            print(e);
+                            print(e.to_string());
+                            let response = ServerResponse::new(req);
+                            response.text("Error fetching access token: ${e.to_string()}");
+
+                            response
+                        }
+                    }
+
+                    // let response = ServerResponse::new(req);
+
+                    // response.text("Hello, GitHub!");
+
+                    // response
                 } else {
-                    "Error loading counter"
+                    let response = ServerResponse::new(req);
+                    response.text("No query string -- something is fishy.");
+
+                    response
                 }
             });
 
-            server.route("/blog/database", Method::Get, Body::Text, |req: Request| -> string {
+            server.route("/blog/counter", Method::Get, |req: Request| -> ServerResponse {
+                let response = ServerResponse::new(req);
+
                 if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                    Db::emit(host, counter, html.head, html.body)
+                    response.text(Counter::emit(host, counter, html.head, html.body));
+
+                    response
                 } else {
-                    "Error loading counter"
+                    response.text("Error loading counter");
+                    response.status(500);
+
+                    response
                 }
             });
 
-            server.route("/counter", Method::Get, Body::Text, |req: Request| -> string {
+            server.route("/blog/database", Method::Get, |req: Request| -> ServerResponse {
+                let response = ServerResponse::new(req);
+
                 if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
-                    counter as string
+                    response.text(Db::emit(host, counter, html.head, html.body));
+
+                    response
                 } else {
-                    "Error loading counter"
+                    response.text("Error loading counter");
+                    response.status(500);
+
+                    response
                 }
             });
 
-            server.route("/increment", Method::Post, Body::Text, |req: Request| -> string {
+            server.route("/counter", Method::Get, |req: Request| -> ServerResponse {
+                let response = ServerResponse::new(req);
+
+                if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
+                    response.text(counter as string);
+
+                    response
+                } else {
+                    response.text("Error loading counter");
+                    response.status(500);
+
+                    response
+                }
+            });
+
+            server.route("/increment", Method::Post, |req: Request| -> ServerResponse {
+                let response = ServerResponse::new(req);
+
                 if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
                     counter = counter + 1;
 
                     let insert_query = "INSERT INTO counter (counter) VALUES ($1);";
                     let map = pool.query(insert_query);
-                    let map = map.bind(counter);
-                    map.execute();
+                    let map = map.bind_integer(counter);
+                    match map.execute() {
+                        Result::<[Row], Error>::Ok(rows) => {
+                            response.text(counter as string);
 
-                    counter as string
+                            response
+                        }
+                        Result::<[Row], Error>::Err(e) => {
+                            response.text("Error incrementing counter: ${e.to_string()}");
+                            response.status(500);
+
+                            return response
+                        }
+                    }
                 } else {
-                    "Error loading counter"
+                    response.text("Error loading counter");
+                    response.status(500);
+
+                    response
                 }
             });
 
-            server.route("/decrement", Method::Post, Body::Text, |req: Request| -> string {
+            server.route("/decrement", Method::Post, |req: Request| -> ServerResponse {
+                let response = ServerResponse::new(req);
+
                 if let Result::<int, Error>::Ok(counter) = get_counter(pool) {
                     counter = counter - 1;
 
                     let insert_query = "INSERT INTO counter (counter) VALUES ($1);";
                     let map = pool.query(insert_query);
-                    let map = map.bind(counter);
-                    map.execute();
+                    let map = map.bind_integer(counter);
+                    match map.execute() {
+                        Result::<[Row], Error>::Ok(_) => {
+                            response.text(counter as string);
 
-                    counter as string
+                            response
+                        }
+                        Result::<[Row], Error>::Err(e) => {
+                            response.text("Error decrementing counter: ${e.to_string()}");
+                            response.status(500);
+
+                            return response
+                        }
+                    }
                 } else {
-                    "Error loading counter"
+                    response.text("Error loading counter");
+                    response.status(500);
+
+                    response
                 }
             });
 
-            server.route("/counter_data", Method::Get, Body::Json, |req: Request| -> string {
+            server.route("/counter_data", Method::Get, |req: Request| -> ServerResponse {
                 let select_query = "SELECT * FROM counter ORDER BY updated_at DESC LIMIT 50;";
                 let map = pool.query(select_query);
                 let q = map.map(|row: Row| -> string {
@@ -200,32 +360,42 @@ async fn main() -> Future<()> {
                 });
                 let data = q.fetch_all();
 
+                let response = ServerResponse::new(req);
+
                 let first = true;
-                match data {
-                    Result::<[Row], Error>::Ok(data) => {
-                        let d = data as [string];
+                let result = match data {
+                    Result::<[Row], Error>::Ok(row) => {
+                        let d = row as [string];
 
                         let data_string = "[";
-                        for row in d {
+                        for row_ in d {
                             if first {
                                 first = false;
-                                data_string = data_string + row;
+                                data_string = data_string + row_;
                             } else {
-                                data_string = data_string + ", " + row;
+                                data_string = data_string + ", " + row_;
                             }
                         }
                         data_string + "]"
                     }
                     Result::<[string], Error>::Err(e) => "Error loading counter data",
-                }
+                };
+
+                response.json(result);
+
+                response
             });
 
-            server.route("/help", Method::Get, Body::Text, |req: Request| -> string {
-                "
-                <p>hit the /counter endpoint to view the counter</p>
-                <p>post to /increment to increment the counter</p>
-                <p>post to /decrement to decrement the counter</p>
-                "
+            server.route("/help", Method::Get, |req: Request| -> ServerResponse {
+                let response = ServerResponse::new(req);
+                response.text("
+                    <p>hit the /counter endpoint to view the counter</p>
+                    <p>post to /increment to increment the counter</p>
+                    <p>post to /decrement to decrement the counter</p>
+                ",
+                );
+
+                response
             });
 
             // server.use_tls("fullchain.pem", "privkey.pem");
@@ -235,17 +405,5 @@ async fn main() -> Future<()> {
         Result::<Pool, Error>::Err(e) => {
             print("Error connecting to database: ${e.to_string()}\n");
         }
-    }
-}
-
-fn get_counter(pool: Pool) -> Result<int, Error> {
-    let select_query = "SELECT counter FROM counter ORDER BY updated_at DESC LIMIT 1;";
-    let map = pool.query(select_query);
-    let q = map.map(|row: Row| -> int {
-        row.get("counter", Type::Short).unwrap()
-    });
-    match q.fetch_one() {
-        Result::<Row, Error>::Ok(counter) => Result::<int, Error>::Ok(counter as int),
-        Result::<Row, Error>::Err(e) => Result::<int, Error>::Err(e),
     }
 }
