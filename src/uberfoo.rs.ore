@@ -188,6 +188,9 @@ async fn main() -> Future<()> {
             server.route("/auth/github", Method::Get, |req: Request| -> ServerResponse {
                 let uri = "https://github.com/login/oauth/access_token";
                 if let Option::Some(query) = req.uri().query() {
+                    print(uri);
+                    print(query);
+
                     let state = if let Option::Some(state) = query.get("state") {
                         state
                     } else {
@@ -197,6 +200,7 @@ async fn main() -> Future<()> {
 
                         return response
                     };
+
                     let code = if let Option::Some(code) = query.get("code") {
                         code
                     } else {
@@ -204,12 +208,14 @@ async fn main() -> Future<()> {
                         let response = ServerResponse::new(req);
                         response.text("No code value -- something is fishy.");
 
-                       return response
+                        return response
                     };
-                    print(uri);
+
                     // 🚧 We need to test the state against what we sent. Somehow.
-                    let post = http_client.post(uri + "?client_id=CLIENT_ID&client_secret=${CLIENT_SECRET}&code=${code}&state=${state}").await;
+                    let post = http_client.post(uri + "?client_id=fa5175ee3bcf21bf2b11&client_secret=${CLIENT_SECRET}&code=${code}&state=${state}").await;
                     post.set_header("Accept", "application/json");
+
+                    print(uri + "?client_id=fa5175ee3bcf21bf2b11&client_secret=${CLIENT_SECRET}&code=${code}&state=${state}");
 
                     match post.send().await {
                         Result::<ClientResponse, HttpError>::Ok(resp) => {
