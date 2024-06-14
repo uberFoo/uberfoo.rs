@@ -28,7 +28,10 @@ WITH markdown_insert AS (
     VALUES('
 In this article I''m going to describe one way to add async to a virtual machine in Rust.
 Adding async to a VM is actually pretty simple using the [Pūteketeke](https://www.github.com/uberFoo/puteketeke) crate.
-To be specific, I''m assuming that the VM already exists, and that we want to add async support to it.
+The best part?
+You don''t need to convert your entire VM to async to make this work!
+
+This article assumes that your VM already exists.
 For brevity''s sake, I''m not going to talk about parsers, bytecode, or anything like that.
 I assume that the reader, having already implemented their VM is familiar with these concepts.
 
@@ -45,23 +48,29 @@ Basically any place that something can happen out of the blue, or where you want
 Before we get started, let''s define some terms.
 - **Task**: A task is a unit of work that the VM can execute.
 - **Executor**: An executor is responsible for running tasks on the VM.
+- **Future**: A future is a type that represents a value that will be available at some point in the future.
+- **Async Block**: An async block is a block of code that can be executed asynchronously.
+- **Spawn**: To spawn a task is to create a task that begins execution independent of the current thread.
+- **Await**: To await a Future is to pause the current thread until the Future is complete.
 
 Note that the code examples are written in [dwarf](https://www.github.com/uberFoo/dwarf).
 Be a gem and leave a star on the repo!
 
-Below we await a task, as an async block, in the current thread; it will print "Hello, world!" to the console:
+Below we await a `Future`, as an async block, in the current thread; it will print "Hello, world!" to the console:
 
 ```rust
-let task = async {
+let future = async {
     print("Hello, world!");
 };
 
-task.await;
+future.await;
 ```
 
-The `task` is not executed until the `await` statement is reached.
+The `future` is not executed until the `await` statement is reached.
 
-There must also be a way to spawn tasks that begin execution independent of the current thread.
+We''d also like a way to spawn tasks that begin execution independent of the current thread.
+This is useful when you want to run a task concurrently with other tasks.
+It''s akin to spawning a thread, and in fact that''s nearly what the Executor does.
 Below we spawn a task as an async lambda, which will also print "Hello, world!" to the console:
 
 ```rust
@@ -75,7 +84,6 @@ task.await;
 `chacha::spawn` is a dwarf built-in function that spawns a task.
 
 The primary difference is that a spawned task will begin running immediately, while an awaited task will run in the current thread, and only runs when the task is awaited.
-
 
 It is  assumed that your VM has a `Value` type that represents the values that the VM operates upon: e.g., integers, strings, etc.
 This is so that we can add a Task type.
@@ -259,9 +267,10 @@ The function is a wrapper around the `SmolExecutor::run` function.
 
 The `Executor` type is responsible for running tasks on the VM, and is backed by a smol executor.
 Pūteketeke executes tasks on a thread pool.
+The size of the pool is up to the user, and can be set when creating the `Executor`.
 
-In general, the `Executor` is used to create a new worker via `Executor::new_worker`, to start a task using `Executor::start_task`.
-There are other methods on `Executor`, but they aren''t germane to this discussion.
+In general, the `Executor` is used to create a new worker via `Executor::new_worker`, and to start a task using `Executor::start_task`.
+There are other methods on `Executor` (like timers), but they aren''t germane to this discussion.
 
 ## Async Blocks
 
@@ -271,11 +280,11 @@ When we encounter an async block we need to capture the `Future` that we plan on
 Take the previous example:
 
 ```rust
-let task = async {
+let future = async {
     print("Hello, world!");
 };
 
-task.await;
+future.await;
 ```
 
 In dwarf the above async block is compiled into an anonymous function.
@@ -345,6 +354,45 @@ stack.push(result);
 ## Spawning Tasks
 
 Spawning tasks is exactly the same as the above, but we call `Executor::start_task()` immediately after creating the task.
+
+```rust
+// Create an executor with 5 threads.
+let executor = Executor::new(5);
+
+let future = async move {
+    // Run a function in the dwarf VM.
+    // This should be replaced with the method in your VM that executes a function.
+    vm.inner_run(...)
+};
+
+let worker = executor.new_worker();
+let child_task = worker.create_task(future).unwrap();
+
+// This starts the task immediately.
+executor.start_task(&child_task);
+
+let value = new_ref!(
+    Value,
+    Value::Task {
+        task_name,
+        false,
+        task: new_ref!(Option<AsyncTask<''static, ValueResult>>, Some(child_task))
+    }
+);
+
+stack.push(value);
+```
+
+## Conclusion
+
+Adding async to a virtual machine is a powerful feature.
+It allows the VM to execute tasks concurrently, which can be useful for a variety of applications.
+In this article we described one way to add async to a VM in Rust.
+We used the `Pūteketeke` crate to create an `AsyncTask` type, which encapsulates everything needed to run on the `Executor`.
+
+If you liked this article, please consider leaving a star on the [Pūteketeke](https://www.github.com/uberFoo/puteketeke) and/or the [dwarf](https://www.github.com/uberFoo/dwarf) repositories.
+
+Happy coding!
     ')
     RETURNING id
 )
