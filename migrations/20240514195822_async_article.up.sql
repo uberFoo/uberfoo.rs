@@ -396,8 +396,8 @@ Happy coding!
     ')
     RETURNING id
 )
-INSERT INTO article (title, slug, content, published_at)
-VALUES ('Async Virtual Machines in Rust', 'async-vm', (SELECT id FROM markdown_insert), TIMESTAMP '2024-06-15 00:04:20');
+INSERT INTO article (title, slug, content, published_at, is_draft)
+VALUES ('Async Virtual Machines in Rust', 'async-vm', (SELECT id FROM markdown_insert), TIMESTAMP '2024-06-14 00:04:20', FALSE);
 
 INSERT INTO article_tags (article_slug, tag_id)
 VALUES

@@ -217,31 +217,29 @@ async fn main() -> Future<()> {
 
                     print(uri + "?client_id=fa5175ee3bcf21bf2b11&client_secret=${CLIENT_SECRET}&code=${code}&state=${state}");
 
-                    match post.send().await {
-                        Result::<ClientResponse, HttpError>::Ok(resp) => {
-                            let body = resp.text().await;
-                            print(body);
-                            // let body = body.as_string();
-                            let response = ServerResponse::new(req);
-                            response.text(body);
+                    // match post.send().await {
+                    //     Result::<ClientResponse, HttpError>::Ok(resp) => {
+                    //         let body = resp.text().await;
+                    //         print(body);
+                    //         // let body = body.as_string();
+                    //         let response = ServerResponse::new(req);
+                    //         response.text(body);
 
-                            response
-                        }
-                        Result::<ClientResponse, Error>::Err(e) => {
-                            print(e);
-                            print(e.to_string());
-                            let response = ServerResponse::new(req);
-                            response.text("Error fetching access token: ${e.to_string()}");
+                    //         response
+                    //     }
+                    //     Result::<ClientResponse, Error>::Err(e) => {
+                    //         print(e);
+                    //         print(e.to_string());
+                    //         let response = ServerResponse::new(req);
+                    //         response.text("Error fetching access token: ${e.to_string()}");
 
-                            response
-                        }
-                    }
+                    //         response
+                    //     }
+                    // }
 
-                    // let response = ServerResponse::new(req);
-
-                    // response.text("Hello, GitHub!");
-
-                    // response
+                    let response = ServerResponse::new(req);
+                    response.text("Hello, GitHub!");
+                    response
                 } else {
                     let response = ServerResponse::new(req);
                     response.text("No query string -- something is fishy.");
